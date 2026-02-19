@@ -7,9 +7,11 @@ function getChildrenPojo(note, notePojo, depth = 1) {
   for (let child of note.children) {
     let childPojo = child.getPojo();
     childPojo = getChildrenPojo(child, childPojo, depth - 1);
-    childPojo.attributes = {};
+    childPojo.topics = [];
     for (let attribute of child.ownedAttributes) {
-      childPojo.attributes[attribute.name] = attribute.value;
+      if (attribute.name.startsWith("t_")) {
+        childPojo.topics.push(attribute.name.slice(2));
+      }
     }
     children.push(childPojo);
   }
