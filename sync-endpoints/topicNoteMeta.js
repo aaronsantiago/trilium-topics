@@ -17,7 +17,7 @@ function getChildrenPojo(note, notePojo, depth = 1) {
   return notePojo;
 }
 
-if (req.method == "POST" && secret === "ultra-secret-password") {
+if (req.method == "POST" && secret === api.currentNote.getLabel("secret").value) {
   const targetParentNote = api.currentNote.getRelation("targetNote").targetNote;
 
   let notePojo = targetParentNote.getPojo();
