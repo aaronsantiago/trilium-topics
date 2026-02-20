@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      idb-keyval:
+        specifier: ^6.2.2
+        version: 6.2.2
     devDependencies:
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
@@ -1658,6 +1662,9 @@ packages:
 
   ico-endec@0.1.6:
     resolution: {integrity: sha512-ZdLU38ZoED3g1j3iEyzcQj+wAkY2xfWNkymszfJPoxucIUhK7NayQ+/C4Kv0nDFMIsbtbEHldv3V8PU494/ueQ==}
+
+  idb-keyval@6.2.2:
+    resolution: {integrity: sha512-yjD9nARJ/jb1g+CvD0tlhUHOrJ9Sy0P8T9MF3YaLlHnSRpwPfpTX0XIvpmw3gAJUmEu3FiICLBDPXVwyEvrleg==}
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
@@ -4237,6 +4244,8 @@ snapshots:
       function-bind: 1.1.2
 
   ico-endec@0.1.6: {}
+
+  idb-keyval@6.2.2: {}
 
   idb@7.1.1: {}
 
