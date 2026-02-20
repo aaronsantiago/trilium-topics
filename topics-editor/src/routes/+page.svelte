@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { topicsDbState, initialize } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
+  import { base } from '$app/paths';
 
   initialize();
 
@@ -15,12 +16,12 @@
 
   function navigateToTopic(topic) {
     appState.selectedTopic = topic;
-    goto(`/topic`);
+    goto(base + `/topic`);
   }
 
 </script>
 
-<a href="settings">Settings</a>
+<a href={base +"/settings"}>Settings</a>
 
 {#each topics as topic}
   <div class="card bg-base-100 w-96 shadow-sm">

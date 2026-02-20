@@ -3,6 +3,7 @@
 	import './layout.css';
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
+	import { base } from '$app/paths';
 
 	onMount(async () => {
 	  if (pwaInfo) {
@@ -26,6 +27,8 @@
 
   let webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '' );
   let { children } = $props();
+
+  console.log("base", base)
 </script>
 
 <svelte:head>
@@ -36,7 +39,7 @@
   <div class="breadcrumbs text-sm">
     <ul>
       {#each generateBreadcrumbs() as breadcrumb}
-        <li> <a href="/" class="btn btn-ghost text-xl">{breadcrumb}</a></li>
+        <li> <a href={base + "/"} class="btn btn-ghost text-xl">{breadcrumb}</a></li>
       {/each}
     </ul>
   </div>
