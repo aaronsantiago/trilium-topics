@@ -1,5 +1,4 @@
 const { req, res } = api;
-const { secret } = req.body;
 
 function getChildrenPojo(note, notePojo, depth = 1) {
   if (depth <= 0) return notePojo;
@@ -19,13 +18,28 @@ function getChildrenPojo(note, notePojo, depth = 1) {
   return notePojo;
 }
 
-if (req.method == "POST" && secret === api.currentNote.getLabel("secret").value) {
-  const targetParentNote = api.currentNote.getRelation("targetNote").targetNote;
+if (req.method == "OPTIONS") {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  console.log("Received OPTIONS request, sent CORS headers");
+  res.send(200);
+}
+else if (req.method == "POST") {
 
-  let notePojo = targetParentNote.getPojo();
-  notePojo = getChildrenPojo(targetParentNote, notePojo, 2);
+  const { secret } = req.body;
 
-  res.status(201).json(notePojo);
+  if (secret === api.currentNote.getLabel("secret").value) {
+    const targetParentNote = api.currentNote.getRelation("targetNote").targetNote;
+
+    let notePojo = targetParentNote.getPojo();
+    notePojo = getChildrenPojo(targetParentNote, notePojo, 2);
+
+    res.status(201).json(notePojo);
+  }
+  else {
+    res.send(400);
+  }
 } else {
   res.send(400);
 }
