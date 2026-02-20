@@ -95,7 +95,10 @@ async function refreshTopicsDb() {
   if (isRefreshing) return;
   isRefreshing = true;
   console.log("refreshing db");
-  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
+  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret){
+    isRefreshing = false;
+    return;
+  };
   (async () => {
     try {
       const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
