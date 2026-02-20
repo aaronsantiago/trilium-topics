@@ -6,7 +6,8 @@ const config = {
     adapter: adapter(),
     paths: {
       relative: false,
-      base: process.env.NODE_ENV === "production" ? "/trilium-topics" : "",
+      base: process.env.NODE_ENV === "production" ? "" : "",
+      // base: process.env.NODE_ENV === "production" ? "/trilium-topics" : "",
     },
   },
 };
