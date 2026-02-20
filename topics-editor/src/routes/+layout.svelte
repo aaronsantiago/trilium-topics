@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 	import './layout.css';
 	import { pwaInfo } from 'virtual:pwa-info';
+	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
 
 	onMount(async () => {
 	  if (pwaInfo) {
@@ -31,4 +32,13 @@
  	{@html webManifestLink}
 </svelte:head>
 
+<div class="navbar bg-base-100 shadow-sm">
+  <div class="breadcrumbs text-sm">
+    <ul>
+      {#each generateBreadcrumbs() as breadcrumb}
+        <li> <a href="/" class="btn btn-ghost text-xl">{breadcrumb}</a></li>
+      {/each}
+    </ul>
+  </div>
+</div>
 {@render children()}
