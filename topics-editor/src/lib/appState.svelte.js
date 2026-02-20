@@ -3,7 +3,9 @@ import { page } from '$app/state';
 import {topicsDbState} from './topicsDb.svelte.js';
 
 let appState = $state({
-  selectedTopic: ''
+  selectedTopic: '',
+  selectedNoteName: '',
+  selectedNoteId: '',
 });
 
 function generateBreadcrumbs() {
@@ -12,6 +14,10 @@ function generateBreadcrumbs() {
   breadcrumbs.unshift(topicsDbState.triliumUrl);
   if (breadcrumbs.includes('topic')) {
     breadcrumbs.splice(breadcrumbs.indexOf('topic'), 1, appState.selectedTopic);
+  }
+  if (breadcrumbs.includes('note')) {
+    breadcrumbs.splice(breadcrumbs.indexOf('note'), 0, appState.selectedTopic);
+    breadcrumbs.splice(breadcrumbs.indexOf('note'), 1, appState.selectedNoteName);
   }
 
   return breadcrumbs;
