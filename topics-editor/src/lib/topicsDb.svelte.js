@@ -45,15 +45,20 @@ function initialize() {
 async function refreshTopicsDb() {
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
   (async () => {
-    const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        secret: topicsDbState.triliumSecret
-      })
-    });
+    try {
+      const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          secret: topicsDbState.triliumSecret
+        })
+      });
+    } catch (error) {
+      console.error("Error fetching topicsDb: ", error);
+      return;
+    }
     topicsDbState.topicsDb = await response.json();
     refreshNotes();
   })();
@@ -67,17 +72,21 @@ async function refreshNotes() {
     for (let note of topicNote.children) {
       if (!topicsDbState.notes[note.noteId] || topicsDbState.notes[note.noteId].dateModified != note.dateModified) {
         console.log("updated note: ", note.noteId);
-        let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            secret: topicsDbState.triliumSecret,
-            noteId: note.noteId
-          })
-        });
-        topicsDbState.notes[note.noteId] = await noteResponse.json();
+        try {
+          let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              secret: topicsDbState.triliumSecret,
+              noteId: note.noteId
+            })
+          });
+          topicsDbState.notes[note.noteId] = await noteResponse.json();
+        } catch (error) {
+          console.error("Error fetching note: ", error);
+        }
       }
     }
   }
