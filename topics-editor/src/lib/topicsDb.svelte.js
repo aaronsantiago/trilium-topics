@@ -1,18 +1,26 @@
 import { get, set } from 'idb-keyval';
 
+let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 let topicsDbState = $state({
   triliumUrl: '',
   triliumSecret: '',
   topicsDb: null,
-  notes: null
+  notes: null,
+  updatedNotes: null
 });
 
-// load the initial values from idb
+// initialize topicsDb
 (async () => {
+  // load the initial values from idb
   topicsDbState.triliumUrl = await get('triliumUrl') || '';
   topicsDbState.triliumSecret = await get('triliumSecret') || '';
   topicsDbState.topicsDb = await get('topicsDb') || null;
   topicsDbState.notes = await get('notes') || null;
+  topicsDbState.updatedNotes = await get('updatedNotes') || {};
+
+  // set up an interval to attempt uploading updated notes 5 seconds
+  setInterval(checkUpdatedNotes, 5000);
 })();
 
 // effects must be called inside of a component, so we call this
@@ -35,14 +43,58 @@ function initialize() {
   });
 
   $effect(() => {
+    if (topicsDbState.updatedNotes) set('updatedNotes', $state.snapshot(topicsDbState.updatedNotes));
+  });
+
+  $effect(() => {
     topicsDbState.triliumUrl;
     topicsDbState.triliumSecret;
 
     refreshTopicsDb();
+    checkUpdatedNotes();
   });
 }
 
+async function checkUpdatedNotes() {
+  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
+  if (!topicsDbState.updatedNotes?.length) return;
+
+  let updatedNotesToDelete = []
+  for (let updatedNoteId in topicsDbState.updatedNotes) {
+    console.log("found updated note", updatedNoteId);
+    try {
+      await fetch(topicsDbState.triliumUrl + '/custom/set-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          secret: topicsDbState.triliumSecret,
+          noteId: updatedNoteId,
+          content: topicsDbState.updatedNotes[updatedNoteId].content,
+        })
+      });
+      console.log("Uploaded updated note: ", updatedNoteId);
+      updatedNotesToDelete.push(updatedNoteId);
+    }
+    catch (error) {
+      console.error("Error uploading updated note: ", error);
+    }
+  }
+
+  for (let noteId of updatedNotesToDelete) {
+    delete topicsDbState.updatedNotes[noteId];
+  }
+  if (updatedNotesToDelete?.length > 0) {
+    await sleep(1500);
+    refreshTopicsDb();
+  }
+}
+let isRefreshing = false;
 async function refreshTopicsDb() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  console.log("refreshing db");
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
   (async () => {
     try {
@@ -55,12 +107,15 @@ async function refreshTopicsDb() {
           secret: topicsDbState.triliumSecret
         })
       });
+
+      topicsDbState.topicsDb = await response.json();
+      refreshNotes();
     } catch (error) {
       console.error("Error fetching topicsDb: ", error);
-      return;
     }
-    topicsDbState.topicsDb = await response.json();
-    refreshNotes();
+    finally {
+      isRefreshing = false;
+    }
   })();
 }
 
