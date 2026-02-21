@@ -4,8 +4,11 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
 	import { base } from '$app/paths';
+	import { initGamepad } from '$lib/gamepad.js';
 
 	onMount(async () => {
+
+	  initGamepad();
 	  if (pwaInfo) {
       const { registerSW } = await import('virtual:pwa-register')
       registerSW({
