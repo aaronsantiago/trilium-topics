@@ -1,5 +1,7 @@
 let listeners = [];
 
+let axisListeners = [];
+
 function removeInputListener(listener) {
   listeners = listeners.filter(l => l !== listener);
 }
@@ -8,8 +10,21 @@ export function addInputListener(listener) {
   return () => removeInputListener(listener);
 }
 
+function removeAxisListener(listener) {
+  axisListeners = axisListeners.filter(l => l !== listener);
+}
+
+export function addAxisListener(listener) {
+  axisListeners.push(listener);
+  return () => removeAxisListener(listener);
+}
+
 function handleInput(event) {
   listeners.forEach(listener => listener(event));
+}
+
+function handleAxis(event) {
+  axisListeners.forEach(listener => listener(event));
 }
 
 export function initInputs() {
@@ -47,20 +62,43 @@ export function initInputs() {
     var gamepads = navigator.getGamepads();
     for (let gamepad of gamepads) {
       if (!gamepad?.buttons) continue;
+      gamepad.axes.forEach((axis, i) => {
+        if (i == 0) {
+          handleAxis({ axis: "lx", value: axis });
+        }
+        if (i == 1) {
+          handleAxis({ axis: "ly", value: axis });
+        }
+        if (i == 2) {
+          handleAxis({ axis: "rx", value: axis });
+        }
+        if (i == 3) {
+          handleAxis({ axis: "ry", value: axis });
+        }
+      });
+
       gamepad.buttons.forEach((button, i) => {
         if (button.pressed) {
           if (!keyState[i]) {
             console.log("Pressed: " + i);
-            // if (i == 1) {
-            //   inputTextArea.value = inputTextArea.value.slice(0, -1);
-            //   handleChange({ target: inputTextArea });
-            // }
-            // if (i == 0) {
-            //   handleInput({ key: " ", preventDefault: () => {} });
-            // }
-            // if (i == 13) {
-            //   handleInput({ key: "Tab", preventDefault: () => {} });
-            // }
+            if (i == 0) {
+              handleInput("cancel");
+            }
+            if (i == 1) {
+              handleInput("confirm");
+            }
+            if (i == 12) {
+              handleInput("up");
+            }
+            if (i == 13) {
+              handleInput("down");
+            }
+            if (i == 14) {
+              handleInput("left");
+            }
+            if (i == 15) {
+              handleInput("right");
+            }
             // if (i == 4) {
             //   inputTextArea.value += "t";
             //   handleChange({ target: inputTextArea });

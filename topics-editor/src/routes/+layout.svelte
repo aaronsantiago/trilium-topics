@@ -4,7 +4,7 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
 	import { base } from '$app/paths';
-	import { initInputs } from '$lib/inputs.js';
+	import { initInputs, addAxisListener } from '$lib/inputs.js';
 	import { initializeAppState } from '$lib/appState.svelte.js';
 
 	onMount(async () => {
@@ -34,7 +34,16 @@
   let webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '' );
   let { children } = $props();
 
-  console.log("base", base);
+  $effect(() => {
+    return addAxisListener((e) => {
+      if (e.axis == "ry" && Math.abs(e.value) > 0.1) {
+        document.getElementById("scrollContainer").scrollBy({
+          top: 5 * e.value * e.value * Math.sign(e.value),
+          // behavior: 'smooth'
+        });
+      }
+    });
+  })
 </script>
 
 <svelte:head>
@@ -51,7 +60,7 @@
       </ul>
     </div>
   </div>
-  <div class="overflow-y-auto h-full">
+  <div id="scrollContainer" class="overflow-y-auto h-full">
     {@render children()}
   </div>
 </div>
