@@ -26,7 +26,7 @@
   } from "ckeditor5";
   import "ckeditor5/ckeditor5.css";
 
-  let { initialData, editHandler } = $props();
+  let { initialData, editHandler, editorCallback } = $props();
 
   const editorConfig = {
     toolbar: {
@@ -157,6 +157,10 @@
         console.log("change detected");
         editHandler(editor.getData());
       });
+
+      if (editorCallback) {
+        editorCallback(editor);
+      }
     })();
   });
 </script>

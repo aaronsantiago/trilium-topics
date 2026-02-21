@@ -81,12 +81,26 @@ export function initInputs() {
         if (button.pressed) {
           if (!keyState[i]) {
             console.log("Pressed: " + i);
-            if (i == 0) {
+            if (i == 8) {
               handleInput("cancel");
             }
             if (i == 1) {
               handleInput("confirm");
             }
+
+            if (i == 4) {
+              handleInput("l1");
+            }
+            if (i == 5) {
+              handleInput("r1");
+            }
+            if (i == 6) {
+              handleInput("l2");
+            }
+            if (i == 7) {
+              handleInput("r2");
+            }
+
             if (i == 12) {
               handleInput("up");
             }
