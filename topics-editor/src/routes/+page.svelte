@@ -34,6 +34,13 @@
       } else if (e == "confirm") {
         navigateToTopic(highlightedTopic);
       }
+
+      const el = document.querySelector("#topic_" + highlightedTopic);
+      if (!el) return;
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
     });
   });
 
@@ -42,7 +49,7 @@
 <a href={base +"/settings"}>Settings</a>
 
 {#each topics as topic}
-  <div class="card bg-base-100 w-96 shadow-sm">
+  <div class="card bg-base-100 w-96 shadow-sm" id={"topic_" + topic}>
     <div class={"card-body " + (highlightedTopic == topic ? "bg-secondary text-secondary-content" : "")}>
       <div class="card-title text-2xl" onclick={() => navigateToTopic(topic)}>
         {topic}

@@ -41,13 +41,17 @@
  	{@html webManifestLink}
 </svelte:head>
 
-<div class="navbar bg-base-100 shadow-sm">
-  <div class="breadcrumbs text-sm">
-    <ul>
-      {#each generateBreadcrumbs() as breadcrumb}
-        <li> <a href={base + "/"} class="btn btn-ghost text-xl">{breadcrumb}</a></li>
-      {/each}
-    </ul>
+<div class="flex flex-col h-screen">
+  <div class="navbar bg-base-100 shadow-sm">
+    <div class="breadcrumbs text-sm">
+      <ul>
+        {#each generateBreadcrumbs() as breadcrumb}
+          <li> <a href={base + "/"} class="btn btn-ghost text-xl">{breadcrumb}</a></li>
+        {/each}
+      </ul>
+    </div>
+  </div>
+  <div class="overflow-y-auto h-full">
+    {@render children()}
   </div>
 </div>
-{@render children()}
