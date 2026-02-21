@@ -69,15 +69,20 @@
       }
 
       if (e == "left") {
-        // move the cursor left
+        // move the cursor to the beginning of the previous word
         if (editor) {
           editor.model.change((writer) => {
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
             if (position) {
-              let newPosition = position.getShiftedBy(-1);
-              if (newPosition) {
-                writer.setSelection(newPosition);
+              let text = position.nodeBefore?.data || position.textNode?.data;
+
+              let prevWordOffset = 1;
+
+              for (; text[position.offset - prevWordOffset - 1] && text[position.offset - prevWordOffset - 1] != " "; prevWordOffset++) {}
+              let prevWordPosition = position.getShiftedBy(-prevWordOffset);
+              if (prevWordPosition) {
+                writer.setSelection(prevWordPosition);
               }
             }
           });
@@ -85,14 +90,56 @@
       }
 
       if (e == "right") {
-        // move the cursor right
+        // move the cursor to the end of the next word
         if (editor) {
           editor.model.change((writer) => {
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
             if (position) {
-              let newPosition = position.getShiftedBy(1);
-              if (newPosition) {
+              let text = position.nodeAfter?.data || position.textNode?.data;
+
+              let nextWordOffset = 0;
+
+              for (; text[position.offset + nextWordOffset] && text[position.offset + nextWordOffset] != " "; nextWordOffset++) {}
+              nextWordOffset++;
+              let nextWordPosition = position.getShiftedBy(nextWordOffset);
+              if (nextWordPosition) {
+                writer.setSelection(nextWordPosition);
+              }
+            }
+          });
+        }
+      }
+
+      if (e == "up") {
+        // move the cursor to the previous node
+        if (editor) {
+          editor.model.change((writer) => {
+            let selection = editor.model.document.selection;
+            let position = selection.getFirstPosition();
+            if (position) {
+              let nextNode = position.parent.previousSibling;
+
+              if (nextNode) {
+                let newPosition = writer.createPositionAt(nextNode, 0);
+                writer.setSelection(newPosition);
+              }
+            }
+          });
+        }
+      }
+
+      if (e == "down") {
+        // move the cursor to the next node
+        if (editor) {
+          editor.model.change((writer) => {
+            let selection = editor.model.document.selection;
+            let position = selection.getFirstPosition();
+            if (position) {
+              let nextNode = position.parent.nextSibling;
+
+              if (nextNode) {
+                let newPosition = writer.createPositionAt(nextNode, 0);
                 writer.setSelection(newPosition);
               }
             }
