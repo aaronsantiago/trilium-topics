@@ -2,6 +2,8 @@
   import {appState} from '$lib/appState.svelte.js';
   import {topicsDbState} from '$lib/topicsDb.svelte.js';
   import Editor from '$lib/editor.svelte';
+  import { addInputListener } from "$lib/inputs.js";
+  import { goto } from "$app/navigation";
 
   let note = $derived.by(() => {
     return topicsDbState.notes[appState.selectedNoteId];
@@ -19,6 +21,14 @@
       topicsDbState.updatedNotes[note.noteId].content = content;
     }
   }
+
+  $effect(() => {
+    return addInputListener((e) => {
+      if (e == "cancel") {
+          goto(`/topic`);
+      }
+    });
+  });
 
 </script>
 

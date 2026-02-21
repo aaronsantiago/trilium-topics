@@ -4,11 +4,14 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
 	import { base } from '$app/paths';
-	import { initGamepad } from '$lib/gamepad.js';
+	import { initInputs } from '$lib/inputs.js';
+	import { initializeAppState } from '$lib/appState.svelte.js';
 
 	onMount(async () => {
 
-	  initGamepad();
+	  initInputs();
+		initializeAppState();
+
 	  if (pwaInfo) {
       const { registerSW } = await import('virtual:pwa-register')
       registerSW({
@@ -31,7 +34,7 @@
   let webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '' );
   let { children } = $props();
 
-  console.log("base", base)
+  console.log("base", base);
 </script>
 
 <svelte:head>

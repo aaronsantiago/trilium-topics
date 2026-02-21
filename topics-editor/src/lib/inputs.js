@@ -1,4 +1,45 @@
-export function initGamepad() {
+let listeners = [];
+
+function removeInputListener(listener) {
+  listeners = listeners.filter(l => l !== listener);
+}
+export function addInputListener(listener) {
+  listeners.push(listener);
+  return () => removeInputListener(listener);
+}
+
+function handleInput(event) {
+  listeners.forEach(listener => listener(event));
+}
+
+export function initInputs() {
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key == "ArrowUp") {
+      e.preventDefault();
+      handleInput("up");
+    }
+    else if (e.key == "ArrowDown") {
+      e.preventDefault();
+      handleInput("down");
+    }
+    else if (e.key == "ArrowLeft") {
+      e.preventDefault();
+      handleInput("left");
+    }
+    else if (e.key == "ArrowRight") {
+      e.preventDefault();
+      handleInput("right");
+    }
+    else if (e.key == "Enter") {
+      e.preventDefault();
+      handleInput("confirm");
+    }
+    else if (e.key == "Escape") {
+      e.preventDefault();
+      handleInput("cancel");
+    }
+  });
 
   let keyState = {}
 

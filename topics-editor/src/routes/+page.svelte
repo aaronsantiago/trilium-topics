@@ -4,6 +4,7 @@
   import { topicsDbState, initialize } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
   import { base } from '$app/paths';
+  import { addInputListener } from "$lib/inputs.js";
 
   initialize();
 
@@ -19,13 +20,30 @@
     goto(base + `/topic`);
   }
 
+  let highlightedTopic = $derived.by(() => {
+    return topics[appState.cursorState["main"] || 0];
+  });
+
+  $effect(() => {
+    return addInputListener((e) => {
+      if (e == "up") {
+        appState.cursorState["main"] = Math.max((appState.cursorState["main"] || 0) - 1, 0);
+        console.log("cursorState", appState.cursorState["main"]);
+      } else if (e == "down") {
+        appState.cursorState["main"] = Math.min((appState.cursorState["main"] || 0) + 1, topics.length - 1);
+      } else if (e == "confirm") {
+        navigateToTopic(highlightedTopic);
+      }
+    });
+  });
+
 </script>
 
 <a href={base +"/settings"}>Settings</a>
 
 {#each topics as topic}
   <div class="card bg-base-100 w-96 shadow-sm">
-    <div class="card-body">
+    <div class={"card-body " + (highlightedTopic == topic ? "bg-secondary text-secondary-content" : "")}>
       <div class="card-title text-2xl" onclick={() => navigateToTopic(topic)}>
         {topic}
       </div>

@@ -6,7 +6,35 @@ let appState = $state({
   selectedTopic: '',
   selectedNoteName: '',
   selectedNoteId: '',
+  cursorState: {}
 });
+
+// initialize appState
+(async () => {
+  // load the initial values from idb
+  appState.selectedTopic = await get('selectedTopic') || '';
+  appState.selectedNoteName = await get('selectedNoteName') || '';
+  appState.selectedNoteId = await get('selectedNoteId') || '';
+  appState.cursorState = await get('cursorState') || {};
+})();
+
+function initializeAppState() {
+  $effect(() => {
+    if (appState.selectedTopic) set('selectedTopic', appState.selectedTopic);
+  });
+
+  $effect(() => {
+    if (appState.selectedNoteName) set('selectedNoteName', appState.selectedNoteName);
+  });
+
+  $effect(() => {
+    if (appState.selectedNoteId) set('selectedNoteId', appState.selectedNoteId);
+  });
+
+  $effect(() => {
+    if (appState.cursorState) set('cursorState', $state.snapshot(appState.cursorState));
+  });
+}
 
 function generateBreadcrumbs() {
   let breadcrumbs = page.url.pathname.split('/').filter(Boolean); // Remove leading slash
@@ -23,4 +51,4 @@ function generateBreadcrumbs() {
   return breadcrumbs;
 }
 
-export { appState, generateBreadcrumbs };
+export { appState, generateBreadcrumbs, initializeAppState };
