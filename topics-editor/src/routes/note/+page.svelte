@@ -69,20 +69,61 @@
       }
 
       if (e == "left") {
-        // move the cursor to the beginning of the previous word
+        // move the cursor to the end of the next word
         if (editor) {
           editor.model.change((writer) => {
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
             if (position) {
-              let text = position.nodeBefore?.data || position.textNode?.data;
+              const root = editor.model.document.getRoot();
+              const range = editor.model.createRange(
+                editor.model.createPositionAt(root, 0),
+                position,
+              );
 
-              let prevWordOffset = 1;
+              const walker = range.getWalker({
+                singleCharacters: true,
+                ignoreElementEnd: true,
+                direction: "backward",
+              });
 
-              for (; text[position.offset - prevWordOffset - 1] && text[position.offset - prevWordOffset - 1] != " "; prevWordOffset++) {}
-              let prevWordPosition = position.getShiftedBy(-prevWordOffset);
-              if (prevWordPosition) {
-                writer.setSelection(prevWordPosition);
+              let firstChar = true;
+
+              for (const { item, nextPosition, previousPosition } of walker) {
+                if (item.is("$textProxy")) {
+                  const char = item.data;
+                  const isSpace = /\s/.test(char);
+                  const isPunctuation = !isSpace && /\W/.test(char);
+
+                  if (isSpace) {
+                    // if first char found is space we should skip it
+                    if (firstChar) {
+                      firstChar = false;
+                      continue;
+                    }
+                    // note that this is different from the right case
+                    // we want to be on the left side of spaces for inputs
+                    writer.setSelection(nextPosition);
+                    return;
+                  }
+                  else if (isPunctuation) {
+                    // if the first char found is a punctuation, move to the other side of it
+                    if (firstChar) {
+                      writer.setSelection(nextPosition);
+                      return;
+                    }
+                    writer.setSelection(previousPosition);
+                    return;
+                  }
+                  else {
+                    firstChar = false;
+                  }
+                } else if (item.is("element")) {
+                  // Treat element boundaries as word boundaries
+                  const pos = writer.createPositionAt(item, 0);
+                  writer.setSelection(pos);
+                  return;
+                }
               }
             }
           });
@@ -96,15 +137,53 @@
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
             if (position) {
-              let text = position.nodeAfter?.data || position.textNode?.data;
+              const root = editor.model.document.getRoot();
+              const range = editor.model.createRange(
+                position,
+                editor.model.createPositionAt(root, "end"),
+              );
 
-              let nextWordOffset = 0;
+              const walker = range.getWalker({
+                singleCharacters: true,
+                ignoreElementEnd: true,
+                direction: "forward",
+              });
 
-              for (; text[position.offset + nextWordOffset] && text[position.offset + nextWordOffset] != " "; nextWordOffset++) {}
-              nextWordOffset++;
-              let nextWordPosition = position.getShiftedBy(nextWordOffset);
-              if (nextWordPosition) {
-                writer.setSelection(nextWordPosition);
+              let firstChar = true;
+
+              for (const { item, nextPosition, previousPosition } of walker) {
+                if (item.is("$textProxy")) {
+                  const char = item.data;
+                  const isSpace = /\s/.test(char);
+                  const isPunctuation = !isSpace && /\W/.test(char);
+
+                  if (isSpace) {
+                    // if first char found is space we should skip it
+                    if (firstChar) {
+                      firstChar = false;
+                      continue;
+                    }
+                    writer.setSelection(previousPosition);
+                    return;
+                  }
+                  else if (isPunctuation) {
+                    // if the first char found is a punctuation, move to the other side of it
+                    if (firstChar) {
+                      writer.setSelection(nextPosition);
+                      return;
+                    }
+                    writer.setSelection(previousPosition);
+                    return;
+                  }
+                  else {
+                    firstChar = false;
+                  }
+                } else if (item.is("element")) {
+                  // Treat element boundaries as word boundaries
+                  const pos = writer.createPositionAt(item, 0);
+                  writer.setSelection(pos);
+                  return;
+                }
               }
             }
           });
@@ -112,17 +191,49 @@
       }
 
       if (e == "up") {
-        // move the cursor to the previous node
         if (editor) {
           editor.model.change((writer) => {
-            let selection = editor.model.document.selection;
-            let position = selection.getFirstPosition();
-            if (position) {
-              let nextNode = position.parent.previousSibling;
+            const selection = editor.model.document.selection;
+            const position = selection.getFirstPosition();
 
-              if (nextNode) {
-                let newPosition = writer.createPositionAt(nextNode, 0);
-                writer.setSelection(newPosition);
+            if (position) {
+              const root = editor.model.document.getRoot();
+              const range = editor.model.createRange(
+                editor.model.createPositionAt(root, 0),
+                position,
+              );
+
+              const walker = range.getWalker({
+                ignoreElementEnd: true,
+                direction: "backward",
+              });
+              let skipFirst = false;
+              for (const { item, previousPosition } of walker) {
+                // initial previous is the beginning of the current position, so skip it
+                if (!skipFirst) {
+                  skipFirst = true;
+                  continue;
+                }
+                // Skip text nodes, look for a block element
+                if (item.is("element")) {
+                  const newPosition = writer.createPositionAt(item, 0);
+                  writer.setSelection(newPosition);
+
+                  // If the new position has the same total offset as the current position,
+                  // it means it's the same line, so keep looking
+                  let currentTotalOffset = position.path.reduce(
+                    (a, b) => a + b,
+                    0,
+                  );
+                  let newTotalOffset = newPosition.path.reduce(
+                    (a, b) => a + b,
+                    0,
+                  );
+                  if (currentTotalOffset == newTotalOffset) {
+                    continue;
+                  }
+                  break;
+                }
               }
             }
           });
@@ -130,17 +241,43 @@
       }
 
       if (e == "down") {
-        // move the cursor to the next node
         if (editor) {
           editor.model.change((writer) => {
-            let selection = editor.model.document.selection;
-            let position = selection.getFirstPosition();
-            if (position) {
-              let nextNode = position.parent.nextSibling;
+            const selection = editor.model.document.selection;
+            const position = selection.getFirstPosition();
 
-              if (nextNode) {
-                let newPosition = writer.createPositionAt(nextNode, 0);
-                writer.setSelection(newPosition);
+            if (position) {
+              const root = editor.model.document.getRoot();
+              const range = editor.model.createRange(
+                position,
+                editor.model.createPositionAt(root, "end"),
+              );
+
+              const walker = range.getWalker({
+                ignoreElementEnd: true,
+              });
+              let skipFirst = false;
+              for (const { item, nextPosition } of walker) {
+                // Skip text nodes, look for a block element
+                if (item.is("element")) {
+                  const newPosition = writer.createPositionAt(item, 0);
+                  writer.setSelection(newPosition);
+
+                  // If the new position has the same total offset as the current position,
+                  // it means it's the same line, so keep looking
+                  let currentTotalOffset = position.path.reduce(
+                    (a, b) => a + b,
+                    0,
+                  );
+                  let newTotalOffset = newPosition.path.reduce(
+                    (a, b) => a + b,
+                    0,
+                  );
+                  if (currentTotalOffset == newTotalOffset) {
+                    continue;
+                  }
+                  break;
+                }
               }
             }
           });
