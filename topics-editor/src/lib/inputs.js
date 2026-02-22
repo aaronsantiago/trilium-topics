@@ -46,6 +46,10 @@ export function initInputs() {
       handleInput("r2")
       e.preventDefault();
     }
+    if (e.key == "0") {
+      handleInput("delete")
+      e.preventDefault();
+    }
     if (e.key == "ArrowUp") {
       e.preventDefault();
       handleInput("up");
@@ -102,6 +106,9 @@ export function initInputs() {
             }
             if (i == 1) {
               handleInput("confirm");
+            }
+            if (i == 3) {
+              handleInput("delete");
             }
 
             if (i == 4) {
