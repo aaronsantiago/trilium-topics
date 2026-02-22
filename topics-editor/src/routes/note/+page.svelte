@@ -71,6 +71,11 @@
       if (e == "left") {
         // move the cursor to the end of the next word
         if (editor) {
+          if (!editor.editing.view.document.isFocused) {
+            editor.editing.view.focus();
+            return;
+          }
+
           editor.model.change((writer) => {
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
@@ -133,6 +138,11 @@
       if (e == "right") {
         // move the cursor to the end of the next word
         if (editor) {
+          if (!editor.editing.view.document.isFocused) {
+            editor.editing.view.focus();
+            return;
+          }
+
           editor.model.change((writer) => {
             let selection = editor.model.document.selection;
             let position = selection.getFirstPosition();
@@ -192,6 +202,11 @@
 
       if (e == "up") {
         if (editor) {
+          if (!editor.editing.view.document.isFocused) {
+            editor.editing.view.focus();
+            return;
+          }
+
           editor.model.change((writer) => {
             const selection = editor.model.document.selection;
             const position = selection.getFirstPosition();
@@ -242,6 +257,11 @@
 
       if (e == "down") {
         if (editor) {
+          if (!editor.editing.view.document.isFocused) {
+            editor.editing.view.focus();
+            return;
+          }
+
           editor.model.change((writer) => {
             const selection = editor.model.document.selection;
             const position = selection.getFirstPosition();
