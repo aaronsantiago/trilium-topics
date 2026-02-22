@@ -30,6 +30,22 @@ function handleAxis(event) {
 export function initInputs() {
 
   window.addEventListener("keydown", (e) => {
+    if (e.key == "3") {
+      handleInput("l2")
+      e.preventDefault();
+    }
+    if (e.key == "4") {
+      handleInput("l1")
+      e.preventDefault();
+    }
+    if (e.key == "7") {
+      handleInput("r1")
+      e.preventDefault();
+    }
+    if (e.key == "8") {
+      handleInput("r2")
+      e.preventDefault();
+    }
     if (e.key == "ArrowUp") {
       e.preventDefault();
       handleInput("up");
