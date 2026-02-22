@@ -60,7 +60,7 @@
       </ul>
     </div>
   </div>
-  <div id="scrollContainer" class="overflow-y-auto h-full">
+  <div id="scrollContainer" class="overflow-y-auto h-full relative">
     {@render children()}
   </div>
 </div>

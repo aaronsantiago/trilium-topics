@@ -124,6 +124,9 @@ export function initInputs() {
               handleInput("r2");
             }
 
+            if (i == 10) {
+              handleInput("l3");
+            }
             if (i == 12) {
               handleInput("up");
             }

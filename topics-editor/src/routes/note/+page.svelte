@@ -2,7 +2,8 @@
   import { appState } from "$lib/appState.svelte.js";
   import { topicsDbState } from "$lib/topicsDb.svelte.js";
   import Editor from "$lib/editor.svelte";
-  import { addInputListener } from "$lib/inputs.js";
+  import WordRing from "./wordRing.svelte";
+  import { addInputListener, addAxisListener } from "$lib/inputs.js";
   import { goto } from "$app/navigation";
 
   import { generateT9Db } from "$lib/t8-engine.js";
@@ -11,6 +12,12 @@
   let currentString = $state("");
 
   let editor = $state(null);
+  let selectedWordIndex = $state(0);
+  let selectedWordRing = $state(0);
+
+  function updateSelectedWordIndex(index) {
+    selectedWordIndex = index;
+  }
 
   function setEditor(e) {
     editor = e;
@@ -26,6 +33,26 @@
     }
 
     return curT9Db.entries || [];
+  });
+
+  $effect(() => {
+    t9Words;
+
+    selectedWordRing = 0;
+  });
+
+  let wordRings = $derived.by(() => {
+    let rings = [];
+    let remainingWords = [...t9Words];
+
+    console.log(remainingWords);
+
+    while (remainingWords.length > 0) {
+      rings.push(remainingWords.slice(0, 9));
+      remainingWords = remainingWords.slice(9);
+    }
+    console.log(rings);
+    return rings;
   });
 
   $effect(() => {
@@ -53,6 +80,20 @@
     }
   }
 
+  let wordSelectionXAxis = $state(0);
+  let wordSelectionYAxis = $state(0);
+
+  $effect(() => {
+    return addAxisListener((e) => {
+      if (e.axis == "lx") {
+        wordSelectionXAxis = e.value;
+      }
+      if (e.axis == "ly") {
+        wordSelectionYAxis = e.value;
+      }
+    });
+  });
+
   $effect(() => {
     return addInputListener((e) => {
       if (e == "l2") {
@@ -66,6 +107,10 @@
       }
       if (e == "r2") {
         currentString += "e";
+      }
+
+      if (e == "l3") {
+        selectedWordRing = (selectedWordRing + 1) % wordRings.length;
       }
 
       if (e == "left") {
@@ -110,8 +155,7 @@
                     // we want to be on the left side of spaces for inputs
                     writer.setSelection(nextPosition);
                     return;
-                  }
-                  else if (isPunctuation) {
+                  } else if (isPunctuation) {
                     // if the first char found is a punctuation, move to the other side of it
                     if (firstChar) {
                       writer.setSelection(nextPosition);
@@ -119,8 +163,7 @@
                     }
                     writer.setSelection(previousPosition);
                     return;
-                  }
-                  else {
+                  } else {
                     firstChar = false;
                   }
                 } else if (item.is("element")) {
@@ -175,8 +218,7 @@
                     }
                     writer.setSelection(previousPosition);
                     return;
-                  }
-                  else if (isPunctuation) {
+                  } else if (isPunctuation) {
                     // if the first char found is a punctuation, move to the other side of it
                     if (firstChar) {
                       writer.setSelection(nextPosition);
@@ -184,8 +226,7 @@
                     }
                     writer.setSelection(previousPosition);
                     return;
-                  }
-                  else {
+                  } else {
                     firstChar = false;
                   }
                 } else if (item.is("element")) {
@@ -307,8 +348,7 @@
       if (e == "delete") {
         if (currentString.length > 0) {
           currentString = currentString.slice(0, -1);
-        }
-        else {
+        } else {
           if (editor) {
             if (!editor.editing.view.document.isFocused) {
               editor.editing.view.focus();
@@ -350,8 +390,7 @@
                       // we want to be on the left side of spaces for inputs
                       endPosition = nextPosition;
                       break;
-                    }
-                    else if (isPunctuation) {
+                    } else if (isPunctuation) {
                       // if the first char found is a punctuation, move to the other side of it
                       if (firstChar) {
                         endPosition = nextPosition;
@@ -359,8 +398,7 @@
                       }
                       endPosition = previousPosition;
                       break;
-                    }
-                    else {
+                    } else {
                       firstChar = false;
                     }
                   } else if (item.is("element")) {
@@ -382,7 +420,7 @@
 
       if (e == "confirm") {
         if (editor) {
-          let word = t9Words[0];
+          let word = t9Words[selectedWordRing * 9 + selectedWordIndex];
           if (word) {
             currentString = "";
             editor.model.change((writer) => {
@@ -405,15 +443,26 @@
   });
 </script>
 
-<div>{currentString}</div>
-<div>
-  {#each t9Words as word, i}
-    <div>{word}</div>
-  {/each}
-</div>
-<div class="card card-m">
-  <div class="card-body">
-    <div class="card-title text-2xl">{note?.title}</div>
+<div class="flex gap-4 w-screen">
+  <div class="flex-grow">
+    {#each wordRings as words, i (words.join("-") + selectedWordRing)}
+      <WordRing
+        selected={i == selectedWordRing}
+        xAxisValue={i == selectedWordRing ? wordSelectionXAxis : 0}
+        yAxisValue={i == selectedWordRing ? wordSelectionYAxis : 0}
+        words={words}
+        selectedWordIndexUpdateCallback={i == selectedWordRing ? updateSelectedWordIndex : null}
+      />
+    {/each}
+    <div>{currentString}</div>
+    <div>
+      {#each t9Words as word, i}
+        <div>{word}</div>
+      {/each}
+    </div>
+  </div>
+  <div>
+    <div class="">{note?.title}</div>
     <Editor
       {editHandler}
       initialData={topicsDbState.updatedNotes[note?.noteId]?.content ||

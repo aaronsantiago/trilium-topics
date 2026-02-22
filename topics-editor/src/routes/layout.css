@@ -23,8 +23,8 @@
 }
 
 .editor-container_classic-editor .editor-container__editor {
-	min-width: 795px;
-	max-width: 795px;
+	/*min-width: 795px;
+	max-width: 795px;*/
 }
 
 .editor-container__sidebar_ckeditor-ai:has(.ck-tabs.ck-hidden) {
