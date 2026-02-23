@@ -5,6 +5,7 @@
   import WordRing from "./wordRing.svelte";
   import { addInputListener, addAxisListener } from "$lib/inputs.js";
   import { goto } from "$app/navigation";
+  import * as cheerio from 'cheerio';
 
   import { generateT9Db } from "$lib/t8-engine.js";
 
@@ -58,8 +59,42 @@
   $effect(() => {
     (async () => {
       let wordList = await fetch("/google-10000-english-usa.txt");
+      let startTime = Date.now();
       let text = await wordList.text();
-      t9Db = generateT9Db(text);
+
+      let notesWordMap = {};
+
+      for (let noteId in topicsDbState.notes) {
+        let note = topicsDbState.notes[noteId];
+
+        if (note.content) {
+          console.log(note.content)
+          const html = cheerio.load(note.content);
+          html("br").replaceWith("\n");
+          html("code").replaceWith("\n");
+
+          html('p, div, h1, h2, h3, h4, h5, h6, li, tr, blockquote, pre').each((_, el) => {
+            html(el).append('\n');
+          });
+
+          let textContent = html.text();
+
+          let words = textContent.split(/\s+/);
+          for (let word of words) {
+            let cleanedWord = word.toLowerCase().replace(/[^a-z]/g, "");
+            if (cleanedWord.length == 0) continue;
+            if (!notesWordMap[cleanedWord]) notesWordMap[cleanedWord] = 0;
+            notesWordMap[cleanedWord]++;
+          }
+        }
+      }
+      let wordsWithCounts = Object.entries(notesWordMap);
+      wordsWithCounts.sort((a, b) => b[1] - a[1]);
+      let noteWordList = wordsWithCounts.map(([word, count]) => word);
+      let noteDictionary = noteWordList.join("\n") + "\n" + text;
+      t9Db = generateT9Db(noteDictionary);
+
+      console.log("T9 DB generated in " + (Date.now() - startTime) + "ms");
     })();
   });
 

@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval';
+import * as cheerio from 'cheerio';
 
 let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -142,6 +143,7 @@ async function refreshNotes() {
             })
           });
           topicsDbState.notes[note.noteId] = await noteResponse.json();
+
         } catch (error) {
           console.error("Error fetching note: ", error);
         }
