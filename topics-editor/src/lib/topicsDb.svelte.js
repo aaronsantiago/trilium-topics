@@ -1,5 +1,4 @@
 import { get, set } from 'idb-keyval';
-import * as cheerio from 'cheerio';
 
 let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

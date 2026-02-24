@@ -59,7 +59,6 @@
   $effect(() => {
     (async () => {
       let wordList = await fetch("/google-10000-english-usa.txt");
-      let startTime = Date.now();
       let text = await wordList.text();
 
       let notesWordMap = {};
@@ -93,8 +92,6 @@
       let noteWordList = wordsWithCounts.map(([word, count]) => word);
       let noteDictionary = noteWordList.join("\n") + "\n" + text;
       t9Db = generateT9Db(noteDictionary);
-
-      console.log("T9 DB generated in " + (Date.now() - startTime) + "ms");
     })();
   });
 
