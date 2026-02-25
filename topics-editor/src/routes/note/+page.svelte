@@ -22,7 +22,11 @@
   function editHandler(content) {
     if (!note?.noteId) return;
 
-    if (topicsDbState.updatedNotes[note.noteId] == null) {
+    if (topicsDbState.createdNotes[note.noteId]) {
+      topicsDbState.createdNotes[note.noteId].content = content;
+      return;
+    }
+    else if (topicsDbState.updatedNotes[note.noteId] == null) {
       topicsDbState.updatedNotes[note.noteId] = {
         content: content,
         noteId: note.noteId,

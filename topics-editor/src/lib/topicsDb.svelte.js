@@ -1,5 +1,7 @@
 import { get, set } from 'idb-keyval';
 import { untrack } from 'svelte';
+import { appState } from './appState.svelte.js';
+import dayjs from 'dayjs';
 
 let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -43,6 +45,7 @@ function getNotes() {
 
   // set up an interval to attempt uploading updated notes 5 seconds
   setInterval(checkUpdatedNotes, 5000);
+  setInterval(checkCreatedNotes, 5000);
 })();
 
 // effects must be called inside of a component, so we call this
@@ -69,6 +72,10 @@ function initialize() {
   });
 
   $effect(() => {
+    if (topicsDbState.createdNotes) set('createdNotes', $state.snapshot(topicsDbState.createdNotes));
+  });
+
+  $effect(() => {
     topicsDbState.triliumUrl;
     topicsDbState.triliumSecret;
     console.log("effect triggered");
@@ -78,8 +85,57 @@ function initialize() {
     untrack(() => {
       refreshTopicsDb();
       checkUpdatedNotes();
+      checkCreatedNotes();
     });
   });
+}
+
+async function checkCreatedNotes() {
+  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
+  if (!Object.keys(topicsDbState?.createdNotes || {}).length) return;
+
+  let createdNotesToDelete = [];
+  let editorNoteId = null;
+  for (let createdNoteId in topicsDbState.createdNotes) {
+    try {
+      let result = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "title": topicsDbState.createdNotes[createdNoteId].title,
+          "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
+          "secret": topicsDbState.triliumSecret,
+          "content": topicsDbState.createdNotes[createdNoteId].content,
+          "topics": topicsDbState.createdNotes[createdNoteId].topics
+        })
+      });
+
+      let resultJson = await result.json();
+
+      console.log("Uploaded created note: ", createdNoteId, resultJson.noteId);
+
+      if (appState.selectedNoteId == createdNoteId) {
+        editorNoteId = resultJson.noteId;
+      }
+      createdNotesToDelete.push(createdNoteId);
+    }
+    catch (error) {
+      console.error("Error uploading updated note: ", error);
+    }
+  }
+
+  if (createdNotesToDelete?.length > 0) {
+    await sleep(1500);
+    await refreshTopicsDb();
+    for (let noteId of createdNotesToDelete) {
+      delete topicsDbState.createdNotes[noteId];
+    }
+    if (editorNoteId) {
+      appState.selectedNoteId = editorNoteId;
+    }
+  }
 }
 
 async function checkUpdatedNotes() {
@@ -176,4 +232,11 @@ async function refreshNotes() {
   }
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes };
+function resetDb() {
+  topicsDbState.topicsDb = null;
+  topicsDbState.dbNotes = null;
+  topicsDbState.updatedNotes = {};
+  topicsDbState.createdNotes = {};
+}
+
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, resetDb };

@@ -15,6 +15,12 @@ else if (req.method == "POST") {
     let note = api.getNote(noteId);
     let notePojo = note.getPojo();
     notePojo.content = note.getContent();
+    notePojo.topics = [];
+    for (let attribute of note.ownedAttributes) {
+      if (attribute.name.startsWith("t_")) {
+        notePojo.topics.push(attribute.name.slice(2));
+      }
+    }
     res.status(200).json(notePojo);
   } else {
     res.send(400);

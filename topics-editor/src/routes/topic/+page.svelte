@@ -5,20 +5,13 @@
   import { addInputListener } from "$lib/inputs.js";
 
   let notes = $derived.by(() => {
-    let topicNotes = (topicsDbState.topicsDb?.children || []);
-
-    let topicNote = topicNotes.find(note => note.title === appState.selectedTopic);
-    if (!topicNote) {
-      return [];
-    }
-
     let allNotes = getNotes();
-    if (!allNotes || allNotes.length <= 0) {
+    if (!allNotes || Object.keys(allNotes).length <= 0) {
       return [];
     }
 
-    return topicNote.children.map(notePojo => {
-      return allNotes[notePojo.noteId];
+    return Object.values(allNotes).filter(notePojo => {
+      return notePojo?.topics?.includes(appState.selectedTopic);
     });
   });
 

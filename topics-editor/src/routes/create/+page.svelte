@@ -151,6 +151,7 @@
     let tempNoteId = crypto.randomUUID();
     topicsDbState.createdNotes[tempNoteId] = {
       title: title,
+      noteId: tempNoteId,
       dateCreated: dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),
       content: "",
       topics: selectedTopics
