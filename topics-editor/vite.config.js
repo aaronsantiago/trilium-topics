@@ -31,7 +31,14 @@ export default defineConfig({
             "type": "image/webp",
             "form_factor": "wide",
             "label": "note screenshot"
-          }
+          },
+          {
+            "src": "screenshot-tall.png",
+            "sizes": "720x1280",
+            "type": "image/webp",
+            "label": "note screenshot tall"
+          },
+
         ],
         icons: [
             {
