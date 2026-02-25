@@ -56,8 +56,12 @@ export function moveCursorLeft(editor) {
             firstChar = false;
           }
         } else if (item.is("element")) {
-          const pos = writer.createPositionAt(item, 0);
-          writer.setSelection(pos);
+          if (firstChar) {
+            // At start of line — go to end of previous paragraph
+            writer.setSelection(writer.createPositionAt(item, "end"));
+            return;
+          }
+          writer.setSelection(writer.createPositionAt(item, 0));
           return;
         }
       }
@@ -85,6 +89,7 @@ export function moveCursorRight(editor) {
       });
 
       let firstChar = true;
+      let lastWordEndPosition = null;
 
       for (const { item, nextPosition, previousPosition } of walker) {
         if (item.is("$textProxy")) {
@@ -108,12 +113,22 @@ export function moveCursorRight(editor) {
             return;
           } else {
             firstChar = false;
+            lastWordEndPosition = nextPosition;
           }
         } else if (item.is("element")) {
+          if (!firstChar && lastWordEndPosition) {
+            writer.setSelection(lastWordEndPosition);
+            return;
+          }
           const pos = writer.createPositionAt(item, 0);
           writer.setSelection(pos);
           return;
         }
+      }
+
+      // Single-line case: loop ended at end-of-range after traversing a word
+      if (!firstChar && lastWordEndPosition) {
+        writer.setSelection(lastWordEndPosition);
       }
     }
   });
