@@ -1,10 +1,10 @@
 <script>
-  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { topicsDbState, initialize } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
   import { base } from '$app/paths';
   import { addInputListener } from "$lib/inputs.js";
+  import { getNextFocus } from '@bbc/tv-lrud-spatial';
 
   initialize();
 
@@ -22,41 +22,50 @@
     goto(base + `/topic`);
   }
 
-  let highlightedTopic = $derived.by(() => {
-    return topics[appState.cursorState["main"] || 0];
-  });
+  const directionMap = {
+    up: 'ArrowUp', down: 'ArrowDown',
+    left: 'ArrowLeft', right: 'ArrowRight'
+  };
 
   $effect(() => {
     return addInputListener((e) => {
-      if (e == "up") {
-        appState.cursorState["main"] = Math.max((appState.cursorState["main"] || 0) - 1, 0);
-        console.log("cursorState", appState.cursorState["main"]);
-      } else if (e == "down") {
-        appState.cursorState["main"] = Math.min((appState.cursorState["main"] || 0) + 1, topics.length - 1);
-      } else if (e == "confirm") {
-        navigateToTopic(highlightedTopic);
+      if (directionMap[e]) {
+        const next = getNextFocus(document.activeElement, directionMap[e]);
+        if (next) {
+          next.focus();
+          next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else if (e === 'confirm') {
+        const topic = document.activeElement?.dataset?.topic;
+        if (topic) navigateToTopic(topic);
+        else document.activeElement?.click();
       }
-
-      const el = document.querySelector("#topic_" + highlightedTopic);
-      if (!el) return;
-      el.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      });
     });
+  });
+
+  let focusInitialized = false;
+  $effect(() => {
+    if (topics.length > 0 && !focusInitialized) {
+      focusInitialized = true;
+      document.getElementById('topic_' + topics[0])?.focus();
+    }
   });
 
 </script>
 
-<a href={base +"/settings"}>Settings</a>
-<a href={base +"/create"}>Create</a>
+<a href={base +"/settings"} class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1">Settings</a>
+<a href={base +"/create"} class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1">Create</a>
 
 {#each topics as topic}
-  <div class="card bg-base-100 w-96 shadow-sm" id={"topic_" + topic}>
-    <div class={"card-body " + (highlightedTopic == topic ? "bg-secondary text-secondary-content" : "")}>
-      <div class="card-title text-2xl" onclick={() => navigateToTopic(topic)}>
-        {topic}
-      </div>
+  <div
+    class="card bg-base-100 w-96 shadow-sm group outline-none"
+    id={"topic_" + topic}
+    tabindex="0"
+    data-topic={topic}
+    onclick={() => navigateToTopic(topic)}
+  >
+    <div class="card-body group-focus:bg-secondary group-focus:text-secondary-content">
+      <div class="card-title text-2xl">{topic}</div>
     </div>
   </div>
 {/each}

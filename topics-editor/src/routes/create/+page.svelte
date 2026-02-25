@@ -7,14 +7,18 @@
   import { base } from "$app/paths";
   import { tick } from 'svelte';
   import dayjs from "dayjs";
+  import { getNextFocus } from '@bbc/tv-lrud-spatial';
 
   let title = $state("");
   let inputEl = $state(null);
-  let highlightState = $state(0);
   let selectedTopics = $state([]);
 
+  $effect(() => {
+    if (inputEl) inputEl.focus();
+  });
+
   async function onInsertWord(word) {
-    if (highlightState > 0) return;
+    if (document.activeElement !== inputEl) return;
 
     const pos = inputEl?.selectionStart ?? title.length;
     const before = title.slice(0, pos);
@@ -29,7 +33,7 @@
   }
 
   async function onDeleteWordBackward() {
-    if (highlightState > 0) return;
+    if (document.activeElement !== inputEl) return;
 
     const pos = inputEl?.selectionStart ?? title.length;
     let firstChar = true;
@@ -56,8 +60,6 @@
   }
 
   function moveCursorWordLeft() {
-    if (highlightState > 0) return;
-
     const pos = inputEl?.selectionStart ?? 0;
     const text = title;
     let firstChar = true;
@@ -69,19 +71,12 @@
       const isPunctuation = !isSpace && /\W/.test(char);
 
       if (isSpace) {
-        if (firstChar) {
-          firstChar = false;
-          continue;
-        }
+        if (firstChar) { firstChar = false; continue; }
         newPos = i;
         break;
       } else if (isPunctuation) {
-        if (firstChar) {
-          newPos = i;
-          break;
-        }
-        newPos = i + 1;
-        break;
+        if (firstChar) { newPos = i; break; }
+        newPos = i + 1; break;
       } else {
         firstChar = false;
       }
@@ -92,8 +87,6 @@
   }
 
   function moveCursorWordRight() {
-    if (highlightState > 0) return;
-
     const pos = inputEl?.selectionStart ?? 0;
     const text = title;
     let firstChar = true;
@@ -105,19 +98,12 @@
       const isPunctuation = !isSpace && /\W/.test(char);
 
       if (isSpace) {
-        if (firstChar) {
-          firstChar = false;
-          continue;
-        }
+        if (firstChar) { firstChar = false; continue; }
         newPos = i;
         break;
       } else if (isPunctuation) {
-        if (firstChar) {
-          newPos = i + 1;
-          break;
-        }
-        newPos = i;
-        break;
+        if (firstChar) { newPos = i + 1; break; }
+        newPos = i; break;
       } else {
         firstChar = false;
       }
@@ -129,15 +115,31 @@
 
   function onMoveCursor(direction) {
     if (direction === "left") {
-      if (highlightState > 0) {
-        highlightState = 0;
+      if (document.activeElement !== inputEl) {
+        inputEl?.focus();
       } else {
         moveCursorWordLeft();
       }
+    } else if (direction === "right") {
+      if (document.activeElement !== inputEl) {
+        const next = getNextFocus(document.activeElement, 'ArrowRight');
+        if (next) next.focus();
+      } else {
+        moveCursorWordRight();
+      }
+    } else if (direction === "up") {
+      const next = getNextFocus(document.activeElement, 'ArrowUp');
+      if (next) {
+        next.focus();
+        next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    } else if (direction === "down") {
+      const next = getNextFocus(document.activeElement, 'ArrowDown');
+      if (next) {
+        next.focus();
+        next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
-    else if (direction === "right") moveCursorWordRight();
-    else if (direction === "up") highlightState -= 1;
-    else if (direction === "down") highlightState += 1;
   }
 
   let topics = $derived.by(() => {
@@ -192,16 +194,15 @@
   $effect(() => {
     return addInputListener((e) => {
       if (["l1", "l2", "r1", "r2"].includes(e)) {
-        highlightState = 0;
+        inputEl?.focus();
       }
       if (e === "confirm") {
-        if (highlightState == 1) {
+        if (document.activeElement?.dataset?.action === 'create') {
           if (title.trim() === "" || selectedTopics.length == 0) return;
-
           createNote();
         }
-        if (highlightState > 1) {
-          const topic = topics[highlightState - 2];
+        const topic = document.activeElement?.dataset?.topic;
+        if (topic) {
           if (selectedTopics.includes(topic)) {
             selectedTopics = selectedTopics.filter(t => t !== topic);
           } else {
@@ -210,7 +211,7 @@
         }
       }
       if (e === "delete") {
-        if (highlightState > 0) {
+        if (document.activeElement !== inputEl) {
           selectedTopics = selectedTopics.slice(0, selectedTopics.length - 1);
         }
       }
@@ -218,23 +219,6 @@
         goto(base + "/");
       }
     });
-  });
-
-  $effect(() => {
-    highlightState = Math.max(0, Math.min(highlightState, topics.length + 2));
-
-    if (highlightState == 0) {
-      inputEl?.focus();
-    } else {
-      inputEl?.blur();
-      const el = document.querySelector("#topic_" + topics[highlightState - 2]);
-      if (el) {
-        el.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest'
-        });
-      }
-    }
   });
 </script>
 
@@ -255,9 +239,23 @@
         <span class="badge badge-primary mr-1">{topic}</span>
       {/each}
     </div>
-    <button class={"btn mt-2 btn-soft" + (highlightState == 1 ? " btn-secondary" : " btn-primary")} disabled={title.trim() === "" || selectedTopics.length == 0}>Create</button>
-    {#each topics as topic, i}
-      <div class={(i + 2) === highlightState ? "border" : ""}>{topic}</div>
+    <button
+      class="btn mt-2 btn-soft btn-primary outline-none focus:bg-secondary focus:text-secondary-content"
+      tabindex="0"
+      data-action="create"
+      disabled={title.trim() === "" || selectedTopics.length == 0}
+    >Create</button>
+    {#each topics as topic}
+      <div
+        class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1 cursor-pointer"
+        tabindex="0"
+        data-topic={topic}
+      >
+        {topic}
+        {#if selectedTopics.includes(topic)}
+          <span class="badge badge-primary ml-1">✓</span>
+        {/if}
+      </div>
     {/each}
   </div>
 </div>

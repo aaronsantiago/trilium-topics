@@ -3,6 +3,7 @@
   import {topicsDbState, getNotes} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
   import { addInputListener } from "$lib/inputs.js";
+  import { getNextFocus } from '@bbc/tv-lrud-spatial';
   import dayjs from 'dayjs';
 
   let notes = $derived.by(() => {
@@ -16,44 +17,57 @@
       .sort((a, b) => dayjs(b.createdTime).valueOf() - dayjs(a.createdTime).valueOf());
   });
 
-
   function navigateToNote(note) {
     appState.selectedNoteName = note.title;
     appState.selectedNoteId = note.noteId;
     goto(`/note`);
   }
 
-  let highlightedNote = $derived.by(() => {
-    return notes[appState.cursorState["topic_" + appState.selectedTopic] || 0];
-  });
+  const directionMap = {
+    up: 'ArrowUp', down: 'ArrowDown',
+    left: 'ArrowLeft', right: 'ArrowRight'
+  };
 
   $effect(() => {
     return addInputListener((e) => {
-      if (e == "up") {
-        appState.cursorState["topic_" + appState.selectedTopic] = Math.max((appState.cursorState["topic_" + appState.selectedTopic] || 0) - 1, 0);
-        console.log("cursorState", appState.cursorState["topic_" + appState.selectedTopic]);
-      } else if (e == "down") {
-        appState.cursorState["topic_" + appState.selectedTopic] = Math.min((appState.cursorState["topic_" + appState.selectedTopic] || 0) + 1, notes.length - 1);
-      } else if (e == "confirm") {
-        navigateToNote(highlightedNote);
-      } else if (e == "cancel") {
-         goto(`/`);
+      if (directionMap[e]) {
+        const next = getNextFocus(document.activeElement, directionMap[e]);
+        if (next) {
+          next.focus();
+          next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } else if (e === 'confirm') {
+        const noteId = document.activeElement?.dataset?.noteId;
+        if (noteId) {
+          const note = notes.find(n => n.noteId === noteId);
+          if (note) navigateToNote(note);
+        }
+      } else if (e === 'cancel') {
+        goto(`/`);
       }
-      const el = document.querySelector("#note_" + highlightedNote.noteId);
-      if (!el) return;
-      el.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      });
     });
+  });
+
+  let focusInitialized = false;
+  $effect(() => {
+    if (notes.length > 0 && !focusInitialized) {
+      focusInitialized = true;
+      document.getElementById('note_' + notes[0].noteId)?.focus();
+    }
   });
 
 </script>
 
 {#each notes as note}
-  <div class="card card-m">
-    <div id={"note_" + note.noteId} class={"card-body " + (highlightedNote == note ? "bg-secondary text-secondary-content" : "")}>
-      <div class="card-title text-2xl" onclick={() => {navigateToNote(note)}}>{note.title}</div>
+  <div
+    class="card card-m group outline-none"
+    id={"note_" + note.noteId}
+    tabindex="0"
+    data-note-id={note.noteId}
+    onclick={() => navigateToNote(note)}
+  >
+    <div class="card-body group-focus:bg-secondary group-focus:text-secondary-content">
+      <div class="card-title text-2xl">{note.title}</div>
       {#if (topicsDbState && topicsDbState.updatedNotes && topicsDbState.updatedNotes[note.noteId])}
         {@html topicsDbState.updatedNotes[note.noteId].content}
       {:else}
