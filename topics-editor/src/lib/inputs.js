@@ -76,7 +76,27 @@ export function initInputs() {
     // }
   });
 
-  let keyState = {}
+  const REPEAT_INITIAL_DELAY_MS = 400;
+  const REPEAT_INTERVAL_MS = 100;
+  const DPAD_BUTTONS = new Set([12, 13, 14, 15]);
+
+  let keyState = {};
+  let holdTimestamps = {};
+
+  function dispatchButtonEvent(i) {
+    if (i == 8) handleInput("cancel");
+    if (i == 1) handleInput("confirm");
+    if (i == 3) handleInput("delete");
+    if (i == 4) handleInput("l1");
+    if (i == 5) handleInput("r1");
+    if (i == 6) handleInput("l2");
+    if (i == 7) handleInput("r2");
+    if (i == 10) handleInput("l3");
+    if (i == 12) handleInput("up");
+    if (i == 13) handleInput("down");
+    if (i == 14) handleInput("left");
+    if (i == 15) handleInput("right");
+  }
 
   let updateGamepad = () => {
     var gamepads = navigator.getGamepads();
@@ -99,68 +119,25 @@ export function initInputs() {
 
       gamepad.buttons.forEach((button, i) => {
         if (button.pressed) {
+          const now = performance.now();
           if (!keyState[i]) {
             console.log("Pressed: " + i);
-            if (i == 8) {
-              handleInput("cancel");
-            }
-            if (i == 1) {
-              handleInput("confirm");
-            }
-            if (i == 3) {
-              handleInput("delete");
-            }
-
-            if (i == 4) {
-              handleInput("l1");
-            }
-            if (i == 5) {
-              handleInput("r1");
-            }
-            if (i == 6) {
-              handleInput("l2");
-            }
-            if (i == 7) {
-              handleInput("r2");
-            }
-
-            if (i == 10) {
-              handleInput("l3");
-            }
-            if (i == 12) {
-              handleInput("up");
-            }
-            if (i == 13) {
-              handleInput("down");
-            }
-            if (i == 14) {
-              handleInput("left");
-            }
-            if (i == 15) {
-              handleInput("right");
-            }
-            // if (i == 4) {
-            //   inputTextArea.value += "t";
-            //   handleChange({ target: inputTextArea });
-            // }
-
-            // if (i == 5) {
-            //   inputTextArea.value += "n";
-            //   handleChange({ target: inputTextArea });
-            // }
-            // if (i == 6) {
-            //   inputTextArea.value += "s";
-            //   handleChange({ target: inputTextArea });
-            // }
-            // if (i == 7) {
-            //   inputTextArea.value += "e";
-            //   handleChange({ target: inputTextArea });
-            // }
+            dispatchButtonEvent(i);
             keyState[i] = true;
+            if (DPAD_BUTTONS.has(i)) {
+              holdTimestamps[i] = { pressedAt: now, lastRepeatAt: now };
+            }
+          } else if (DPAD_BUTTONS.has(i) && holdTimestamps[i]) {
+            const { pressedAt, lastRepeatAt } = holdTimestamps[i];
+            if (now - pressedAt >= REPEAT_INITIAL_DELAY_MS &&
+                now - lastRepeatAt >= REPEAT_INTERVAL_MS) {
+              dispatchButtonEvent(i);
+              holdTimestamps[i].lastRepeatAt = now;
+            }
           }
-        }
-        else {
+        } else {
           keyState[i] = false;
+          delete holdTimestamps[i];
         }
       });
     }
