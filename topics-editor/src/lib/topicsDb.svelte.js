@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval';
+import { untrack } from 'svelte';
 
 let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -49,19 +50,23 @@ function initialize() {
   $effect(() => {
     topicsDbState.triliumUrl;
     topicsDbState.triliumSecret;
+    console.log("effect triggered");
 
-    refreshTopicsDb();
-    checkUpdatedNotes();
+    // we use untrack here to avoid an infinite loop of effects triggering each other
+    // not sure why these trigger based on the above tracking though
+    untrack(() => {
+      refreshTopicsDb();
+      checkUpdatedNotes();
+    });
   });
 }
 
 async function checkUpdatedNotes() {
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
-  if (!topicsDbState.updatedNotes?.length) return;
+  if (!Object.keys(topicsDbState?.updatedNotes || {}).length) return;
 
   let updatedNotesToDelete = []
   for (let updatedNoteId in topicsDbState.updatedNotes) {
-    console.log("found updated note", updatedNoteId);
     try {
       await fetch(topicsDbState.triliumUrl + '/custom/set-note', {
         method: 'POST',
@@ -94,7 +99,6 @@ let isRefreshing = false;
 async function refreshTopicsDb() {
   if (isRefreshing) return;
   isRefreshing = true;
-  console.log("refreshing db");
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret){
     isRefreshing = false;
     return;

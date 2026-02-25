@@ -1,5 +1,4 @@
 const { req, res } = api;
-const { secret, title, content, topics, dateCreated } = req.body;
 
 if (req.method == "OPTIONS") {
   res.header('Access-Control-Allow-Origin', '*');
@@ -8,7 +7,14 @@ if (req.method == "OPTIONS") {
   console.log("Received OPTIONS request, sent CORS headers");
   res.send(200);
 }
-else if (req.method == "POST" && secret === api.currentNote.getLabel("secret").value) {
+else if (req.method == "POST") {
+
+  const { secret, title, content, topics, dateCreated } = req.body;
+
+  if (!(secret === api.currentNote.getLabel("secret").value)) {
+    res.send(400);
+    return;
+  }
   let dayNote = api.getDayNote(dateCreated);
 
   const {note} = api.createTextNote(dayNote.noteId, title, content);

@@ -38,13 +38,10 @@
     let rings = [];
     let remainingWords = [...t9Words];
 
-    console.log(remainingWords);
-
     while (remainingWords.length > 0) {
       rings.push(remainingWords.slice(0, 9));
       remainingWords = remainingWords.slice(9);
     }
-    console.log(rings);
     return rings;
   });
 
@@ -59,7 +56,6 @@
         let note = topicsDbState.notes[noteId];
 
         if (note.content) {
-          console.log(note.content)
           const html = cheerio.load(note.content);
           html("br").replaceWith("\n");
           html("code").replaceWith("\n");
