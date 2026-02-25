@@ -24,6 +24,15 @@ export default defineConfig({
         short_name: "topics-editor",
         description: "an editor for trilium-topics",
         theme_color: "#ffffff",
+        screenshots: [
+          {
+            "src": "screenshot.png",
+            "sizes": "1280x720",
+            "type": "image/webp",
+            "form_factor": "wide",
+            "label": "note screenshot"
+          }
+        ],
         icons: [
             {
               "src": "pwa-64x64.png",
