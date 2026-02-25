@@ -5,18 +5,17 @@ import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 
 export default defineConfig({
   define: {
-    'process.env.NODE_ENV': process.env.NODE_ENV === 'production'
-      ? '"production"'
-      : '"development"'
+    "process.env.NODE_ENV":
+      process.env.NODE_ENV === "production" ? '"production"' : '"development"',
   },
   plugins: [
     tailwindcss(),
     sveltekit(),
     SvelteKitPWA({
-      registerType: 'autoUpdate',
-      trailingSlash: 'always',
+      registerType: "autoUpdate",
+      trailingSlash: "always",
       devOptions: {
-        enabled: true
+        enabled: true,
         /* other options */
       },
       manifest: {
@@ -24,46 +23,49 @@ export default defineConfig({
         short_name: "topics-editor",
         description: "an editor for trilium-topics",
         theme_color: "#ffffff",
+        background_color: "#ffffff",
+        display: "standalone",
+        start_url: "/",
+        scope: "/",
         screenshots: [
           {
-            "src": "screenshot.png",
-            "sizes": "1280x720",
-            "type": "image/webp",
-            "form_factor": "wide",
-            "label": "note screenshot"
+            src: "screenshot.png",
+            sizes: "1280x720",
+            type: "image/webp",
+            form_factor: "wide",
+            label: "note screenshot",
           },
           {
-            "src": "screenshot-tall.png",
-            "sizes": "720x1280",
-            "type": "image/webp",
-            "label": "note screenshot tall"
+            src: "screenshot-tall.png",
+            sizes: "720x1280",
+            type: "image/webp",
+            label: "note screenshot tall",
           },
-
         ],
         icons: [
-            {
-              "src": "pwa-64x64.png",
-              "sizes": "64x64",
-              "type": "image/png"
-            },
-            {
-              "src": "pwa-192x192.png",
-              "sizes": "192x192",
-              "type": "image/png"
-            },
-            {
-              "src": "pwa-512x512.png",
-              "sizes": "512x512",
-              "type": "image/png"
-            },
-            {
-              "src": "maskable-icon-512x512.png",
-              "sizes": "512x512",
-              "type": "image/png",
-              "purpose": "maskable"
-            }
-          ]
-      }
+          {
+            src: "pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+          },
+          {
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
     }),
   ],
 });
