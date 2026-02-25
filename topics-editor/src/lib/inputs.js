@@ -86,6 +86,7 @@ export function initInputs() {
   function dispatchButtonEvent(i) {
     if (i == 8) handleInput("cancel");
     if (i == 1) handleInput("confirm");
+    if (i == 2) handleInput("special");
     if (i == 3) handleInput("delete");
     if (i == 4) handleInput("l1");
     if (i == 5) handleInput("r1");

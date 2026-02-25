@@ -12,11 +12,16 @@
   let selectedWordIndex = $state(0);
   let selectedWordRing = $state(0);
 
+  let t9WordsOverride = $state(null);
+
   function updateSelectedWordIndex(index) {
     selectedWordIndex = index;
   }
 
   let t9Words = $derived.by(() => {
+    if (t9WordsOverride) {
+      return t9WordsOverride;
+    }
     let curT9Db = t9Db;
     for (let c of currentString) {
       if (!(c in curT9Db)) {
@@ -105,17 +110,24 @@
 
   $effect(() => {
     return addInputListener((e) => {
-      if (e == "l2") {
-        currentString += "s";
+      if (!t9WordsOverride) {
+        if (e == "l2") {
+          currentString += "s";
+        }
+        if (e == "l1") {
+          currentString += "t";
+        }
+        if (e == "r1") {
+          currentString += "n";
+        }
+        if (e == "r2") {
+          currentString += "e";
+        }
       }
-      if (e == "l1") {
-        currentString += "t";
-      }
-      if (e == "r1") {
-        currentString += "n";
-      }
-      if (e == "r2") {
-        currentString += "e";
+
+      if (e == "special") {
+        console.log('t9 words overridden')
+        t9WordsOverride = [".", "\n", "!", "?", ",", "-", ":", ";"];
       }
 
       if (e == "l3") {
@@ -154,6 +166,7 @@
         } else {
           currentString = "";
         }
+        t9WordsOverride = null;
       }
     });
   });

@@ -288,11 +288,16 @@ export function insertWord(editor, word) {
   if (!ensureFocus(editor)) return;
 
   editor.model.change((writer) => {
-    const insertedRange = editor.model.insertContent(
-      writer.createText(word + " "),
-      editor.model.document.selection,
-    );
+    if (word == "\n") {
+      editor.execute('enter');
+    }
+    else {
+      const insertedRange = editor.model.insertContent(
+        writer.createText(word + " "),
+        editor.model.document.selection,
+      );
 
-    writer.setSelection(insertedRange.end);
+      writer.setSelection(insertedRange.end);
+    }
   });
 }
