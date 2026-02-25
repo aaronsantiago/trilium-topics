@@ -233,6 +233,15 @@ export function deleteWordBackward(editor) {
     let position = selection.getFirstPosition();
     let endPosition = null;
     if (position) {
+      // At start of paragraph — merge with previous paragraph (delete the newline)
+      if (position.offset === 0) {
+        const previousSibling = position.parent.previousSibling;
+        if (previousSibling) {
+          writer.merge(writer.createPositionBefore(position.parent));
+        }
+        return;
+      }
+
       const root = editor.model.document.getRoot();
       const range = editor.model.createRange(
         editor.model.createPositionAt(root, 0),
