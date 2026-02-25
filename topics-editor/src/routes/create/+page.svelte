@@ -191,6 +191,18 @@
     // }
   }
 
+  function toggleTopic() {
+    console.log("toggletopic called")
+    const topic = document.activeElement?.dataset?.topic;
+    if (!topic) return;
+
+    if (selectedTopics.includes(topic)) {
+      selectedTopics = selectedTopics.filter(t => t !== topic);
+    } else {
+      selectedTopics = [...selectedTopics, topic];
+    }
+  }
+
   $effect(() => {
     return addInputListener((e) => {
       if (["l1", "l2", "r1", "r2"].includes(e)) {
@@ -201,13 +213,8 @@
           if (title.trim() === "" || selectedTopics.length == 0) return;
           createNote();
         }
-        const topic = document.activeElement?.dataset?.topic;
-        if (topic) {
-          if (selectedTopics.includes(topic)) {
-            selectedTopics = selectedTopics.filter(t => t !== topic);
-          } else {
-            selectedTopics = [...selectedTopics, topic];
-          }
+        else if (document.activeElement?.dataset?.topic) {
+          toggleTopic();
         }
       }
       if (e === "delete") {
@@ -244,12 +251,14 @@
       tabindex="0"
       data-action="create"
       disabled={title.trim() === "" || selectedTopics.length == 0}
+      onclick={createNote}
     >Create</button>
     {#each topics as topic}
       <div
         class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1 cursor-pointer"
         tabindex="0"
         data-topic={topic}
+        onclick={toggleTopic}
       >
         {topic}
         {#if selectedTopics.includes(topic)}
