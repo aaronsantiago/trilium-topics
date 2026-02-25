@@ -14,7 +14,7 @@
 
     return Object.values(allNotes)
       .filter(notePojo => notePojo?.topics?.includes(appState.selectedTopic))
-      .sort((a, b) => dayjs(b.createdTime).valueOf() - dayjs(a.createdTime).valueOf());
+      .sort((a, b) => dayjs(b.dateCreated).valueOf() - dayjs(a.dateCreated).valueOf());
   });
 
   function navigateToNote(note) {
