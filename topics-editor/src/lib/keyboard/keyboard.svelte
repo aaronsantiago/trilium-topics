@@ -1,5 +1,5 @@
 <script>
-  import { topicsDbState } from "$lib/topicsDb.svelte.js";
+  import { topicsDbState, getNotes } from "$lib/topicsDb.svelte.js";
   import WordRing from "./wordRing.svelte";
   import { addInputListener, addAxisListener } from "$lib/inputs.js";
   import { generateT9Db } from "$lib/t8-engine.js";
@@ -45,15 +45,21 @@
     return rings;
   });
 
+  let text = $state("");
+
   $effect(() => {
     (async () => {
-      let wordList = await fetch("/google-10000-english-usa.txt");
-      let text = await wordList.text();
+    let wordList = await fetch("/google-10000-english-usa.txt");
+    let text = await wordList.text();
+    })();
+  });
 
+  $effect(() => {
+    let notes = getNotes();
+    (async () => {
       let notesWordMap = {};
-
-      for (let noteId in topicsDbState.notes) {
-        let note = topicsDbState.notes[noteId];
+      for (let noteId in notes) {
+        let note = notes[noteId];
 
         if (note.content) {
           const html = cheerio.load(note.content);

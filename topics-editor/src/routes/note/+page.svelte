@@ -31,6 +31,7 @@
         content: content,
         noteId: note.noteId,
         title: note.title,
+        dateCreated: note.dateCreated
       };
     } else {
       topicsDbState.updatedNotes[note.noteId].content = content;
