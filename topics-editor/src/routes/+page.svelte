@@ -49,6 +49,7 @@
 </script>
 
 <a href={base +"/settings"}>Settings</a>
+<a href={base +"/create"}>Create</a>
 
 {#each topics as topic}
   <div class="card bg-base-100 w-96 shadow-sm" id={"topic_" + topic}>

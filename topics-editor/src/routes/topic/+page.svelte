@@ -3,6 +3,7 @@
   import {topicsDbState, getNotes} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
   import { addInputListener } from "$lib/inputs.js";
+  import dayjs from 'dayjs';
 
   let notes = $derived.by(() => {
     let allNotes = getNotes();
@@ -10,9 +11,9 @@
       return [];
     }
 
-    return Object.values(allNotes).filter(notePojo => {
-      return notePojo?.topics?.includes(appState.selectedTopic);
-    });
+    return Object.values(allNotes)
+      .filter(notePojo => notePojo?.topics?.includes(appState.selectedTopic))
+      .sort((a, b) => dayjs(b.createdTime).valueOf() - dayjs(a.createdTime).valueOf());
   });
 
 
