@@ -148,33 +148,44 @@
   });
 
   async function createNote() {
+    let tempNoteId = crypto.randomUUID();
+    topicsDbState.createdNotes[tempNoteId] = {
+      title: title,
+      dateCreated: dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),
+      content: "",
+      topics: selectedTopics
+    };
+    appState.selectedTopic = selectedTopics[0];
+    appState.selectedNoteName = title;
+    appState.selectedNoteId = tempNoteId;
+    goto(base + `/note`);
 
-    let response = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        "title": title,
-        "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
-        "secret": topicsDbState.triliumSecret,
-        "content": "",
-        "topics": selectedTopics
-      }),
-    })
+    // let response = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     "title": title,
+    //     "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
+    //     "secret": topicsDbState.triliumSecret,
+    //     "content": "",
+    //     "topics": selectedTopics
+    //   }),
+    // })
 
-    if (response.ok) {
-      const data = await response.json();
+    // if (response.ok) {
+    //   const data = await response.json();
 
-      await refreshTopicsDb();
+    //   await refreshTopicsDb();
 
-      appState.selectedTopic = selectedTopics[0];
-      appState.selectedNoteName = title;
-      appState.selectedNoteId = data.noteId;
-      goto(base + `/note`);
-    } else {
-      console.error("Failed to create note", response.statusText);
-    }
+    //   appState.selectedTopic = selectedTopics[0];
+    //   appState.selectedNoteName = title;
+    //   appState.selectedNoteId = data.noteId;
+    //   goto(base + `/note`);
+    // } else {
+    //   console.error("Failed to create note", response.statusText);
+    // }
   }
 
   $effect(() => {
