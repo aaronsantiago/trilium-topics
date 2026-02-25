@@ -1,6 +1,6 @@
 <script>
   import {appState} from '$lib/appState.svelte.js';
-  import {topicsDbState} from '$lib/topicsDb.svelte.js';
+  import {topicsDbState, getNotes} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
   import { addInputListener } from "$lib/inputs.js";
 
@@ -11,12 +11,14 @@
     if (!topicNote) {
       return [];
     }
-    if (!topicsDbState.notes || topicsDbState.notes.length <= 0) {
+
+    let allNotes = getNotes();
+    if (!allNotes || allNotes.length <= 0) {
       return [];
     }
 
     return topicNote.children.map(notePojo => {
-      return topicsDbState.notes[notePojo.noteId];
+      return allNotes[notePojo.noteId];
     });
   });
 

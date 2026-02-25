@@ -7,9 +7,29 @@ let topicsDbState = $state({
   triliumUrl: '',
   triliumSecret: '',
   topicsDb: null,
-  notes: null,
-  updatedNotes: null
+  dbNotes: null,
+  updatedNotes: null,
+  createdNotes: null
 });
+
+let notes = $derived.by(() => {
+  let cumulativeNotes = {};
+  for (let noteId in topicsDbState.dbNotes) {
+    cumulativeNotes[noteId] = topicsDbState.dbNotes[noteId];
+  }
+  for (let noteId in topicsDbState.updatedNotes) {
+    cumulativeNotes[noteId] = topicsDbState.updatedNotes[noteId];
+  }
+  for (let noteId in topicsDbState.createdNotes) {
+    cumulativeNotes[noteId] = topicsDbState.createdNotes[noteId];
+  }
+  return cumulativeNotes;
+});
+
+function getNotes() {
+  return notes;
+}
+
 
 // initialize topicsDb
 (async () => {
@@ -17,8 +37,9 @@ let topicsDbState = $state({
   topicsDbState.triliumUrl = await get('triliumUrl') || '';
   topicsDbState.triliumSecret = await get('triliumSecret') || '';
   topicsDbState.topicsDb = await get('topicsDb') || null;
-  topicsDbState.notes = await get('notes') || null;
+  topicsDbState.dbNotes = await get('dbNotes') || null;
   topicsDbState.updatedNotes = await get('updatedNotes') || {};
+  topicsDbState.createdNotes = await get('createdNotes') || {};
 
   // set up an interval to attempt uploading updated notes 5 seconds
   setInterval(checkUpdatedNotes, 5000);
@@ -40,7 +61,7 @@ function initialize() {
   });
 
   $effect(() => {
-    if (topicsDbState.notes) set('notes', $state.snapshot(topicsDbState.notes));
+    if (topicsDbState.dbNotes) set('dbNotes', $state.snapshot(topicsDbState.dbNotes));
   });
 
   $effect(() => {
@@ -128,11 +149,11 @@ async function refreshTopicsDb() {
 
 async function refreshNotes() {
   if (!topicsDbState.topicsDb) return;
-  if (topicsDbState.notes == null) topicsDbState.notes = {};
+  if (topicsDbState.dbNotes == null) topicsDbState.dbNotes = {};
 
   for (let topicNote of (topicsDbState?.topicsDb?.children || [])) {
     for (let note of topicNote.children) {
-      if (!topicsDbState.notes[note.noteId] || topicsDbState.notes[note.noteId].dateModified != note.dateModified) {
+      if (!topicsDbState.dbNotes[note.noteId] || topicsDbState.dbNotes[note.noteId].dateModified != note.dateModified) {
         console.log("updated note: ", note.noteId);
         try {
           let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
@@ -145,7 +166,7 @@ async function refreshNotes() {
               noteId: note.noteId
             })
           });
-          topicsDbState.notes[note.noteId] = await noteResponse.json();
+          topicsDbState.dbNotes[note.noteId] = await noteResponse.json();
 
         } catch (error) {
           console.error("Error fetching note: ", error);
@@ -155,4 +176,4 @@ async function refreshNotes() {
   }
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes };
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes };
