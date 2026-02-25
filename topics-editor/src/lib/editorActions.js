@@ -18,6 +18,15 @@ export function moveCursorLeft(editor) {
     let selection = editor.model.document.selection;
     let position = selection.getFirstPosition();
     if (position) {
+      // At start of paragraph — jump to end of previous paragraph
+      if (position.offset === 0) {
+        const previousSibling = position.parent.previousSibling;
+        if (previousSibling) {
+          writer.setSelection(writer.createPositionAt(previousSibling, "end"));
+        }
+        return;
+      }
+
       const root = editor.model.document.getRoot();
       const range = editor.model.createRange(
         editor.model.createPositionAt(root, 0),
@@ -56,11 +65,6 @@ export function moveCursorLeft(editor) {
             firstChar = false;
           }
         } else if (item.is("element")) {
-          if (firstChar) {
-            // At start of line — go to end of previous paragraph
-            writer.setSelection(writer.createPositionAt(item, "end"));
-            return;
-          }
           writer.setSelection(writer.createPositionAt(item, 0));
           return;
         }
