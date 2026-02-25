@@ -12,6 +12,8 @@ function getChildrenPojo(note, notePojo, depth = 1) {
         childPojo.topics.push(attribute.name.slice(2));
       }
     }
+    const branch = child.getParentBranches().find(b => b.parentNoteId === note.noteId);
+    childPojo.notePosition = branch ? branch.notePosition : null;
     children.push(childPojo);
   }
   notePojo.children = children;

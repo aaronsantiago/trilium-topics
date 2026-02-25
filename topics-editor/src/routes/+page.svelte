@@ -9,10 +9,12 @@
   initialize();
 
   let topics = $derived.by(() => {
-    let topicNotes = topicsDbState.topicsDb?.children || [];
-    return topicNotes.map((topic) => {
-      return topic.title;
-    });
+    let topicNotes = $state.snapshot(topicsDbState.topicsDb?.children) || [];
+    return topicNotes.sort((a, b) => {
+        return a.notePosition - b.notePosition
+      }).map((topic) => {
+        return topic.title;
+      });
   });
 
   function navigateToTopic(topic) {
@@ -47,7 +49,6 @@
 </script>
 
 <a href={base +"/settings"}>Settings</a>
-<a href={base +"/create"}>Create</a>
 
 {#each topics as topic}
   <div class="card bg-base-100 w-96 shadow-sm" id={"topic_" + topic}>
