@@ -28,6 +28,13 @@
 
   let { initialData, editHandler, editorCallback } = $props();
 
+  let cursorX = $state(0);
+  let cursorY = $state(0);
+  let cursorHeight = $state(20);
+  let cursorVisible = $state(false);
+  let cursorKey = $state(0);
+  let containerEl = $state(null);
+
   const editorConfig = {
     toolbar: {
       items: [
@@ -146,6 +153,47 @@
     },
   };
 
+  function updateCursorPosition(editor) {
+    try {
+      const modelPos = editor.model.document.selection.getFirstPosition();
+      if (!modelPos) { cursorVisible = false; return; }
+
+      const viewPos = editor.editing.mapper.toViewPosition(modelPos);
+      if (!viewPos) { cursorVisible = false; return; }
+
+      const domPos = editor.editing.view.domConverter.viewPositionToDom(viewPos);
+      if (!domPos) { cursorVisible = false; return; }
+
+      const domRange = document.createRange();
+      domRange.setStart(domPos.parent, domPos.offset);
+      domRange.setEnd(domPos.parent, domPos.offset);
+
+      const rect = domRange.getBoundingClientRect();
+      const containerRect = containerEl.getBoundingClientRect();
+
+      if (rect.width === 0 && rect.height === 0 && rect.top === 0) {
+        // Fallback for empty paragraphs: use parent element rect
+        const parentEl = domPos.parent.nodeType === Node.TEXT_NODE
+          ? domPos.parent.parentElement
+          : domPos.parent;
+        const parentRect = parentEl?.getBoundingClientRect();
+        if (!parentRect) { cursorVisible = false; return; }
+        cursorX = parentRect.left - containerRect.left;
+        cursorY = parentRect.top - containerRect.top;
+        cursorHeight = parentRect.height || 20;
+      } else {
+        cursorX = rect.left - containerRect.left;
+        cursorY = rect.top - containerRect.top;
+        cursorHeight = rect.height || 20;
+      }
+
+      cursorKey++;
+      cursorVisible = true;
+    } catch (e) {
+      cursorVisible = false;
+    }
+  }
+
   onMount(() => {
     (async () => {
       let editor = await ClassicEditor.create(
@@ -153,18 +201,62 @@
         editorConfig,
       );
 
+      // Suppress Android soft keyboard
+      const editableEl = editor.editing.view.getDomRoot();
+      editableEl.setAttribute("inputmode", "none");
+
+      // Prevent touch from focusing the editable (which would open keyboard)
+      editableEl.addEventListener("pointerdown", (e) => e.preventDefault(), { passive: false });
+
       editor.model.document.on("change:data", () => {
         console.log("change detected");
         editHandler(editor.getData());
       });
 
+      // Track cursor on all model changes (selection-only changes don't fire change:data)
+      editor.model.document.on("change", () => {
+        updateCursorPosition(editor);
+      });
+
       if (editorCallback) {
         editorCallback(editor);
       }
+
+      // Initial cursor render
+      updateCursorPosition(editor);
     })();
   });
 </script>
 
-<div class="editor-container editor-container_classic-editor prose">
+<div
+  bind:this={containerEl}
+  class="editor-container editor-container_classic-editor prose relative"
+>
   <div class="editor-container__editor"><div id="editor"></div></div>
+
+  {#if cursorVisible}
+    {#key cursorKey}
+      <div
+        class="custom-cursor"
+        style="left: {cursorX}px; top: {cursorY}px; height: {cursorHeight}px;"
+        aria-hidden="true"
+      ></div>
+    {/key}
+  {/if}
 </div>
+
+<style>
+  .custom-cursor {
+    position: absolute;
+    width: 2px;
+    background-color: currentColor;
+    pointer-events: none;
+    animation: blink 1s step-end infinite;
+    z-index: 10;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+</style>

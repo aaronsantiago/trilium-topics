@@ -3,17 +3,7 @@
  * Each function takes the CKEditor `editor` instance as its first argument.
  */
 
-function ensureFocus(editor) {
-  if (!editor.editing.view.document.isFocused) {
-    editor.editing.view.focus();
-    return false;
-  }
-  return true;
-}
-
 export function moveCursorLeft(editor) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
     let selection = editor.model.document.selection;
     let position = selection.getFirstPosition();
@@ -74,8 +64,6 @@ export function moveCursorLeft(editor) {
 }
 
 export function moveCursorRight(editor) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
     let selection = editor.model.document.selection;
     let position = selection.getFirstPosition();
@@ -139,8 +127,6 @@ export function moveCursorRight(editor) {
 }
 
 export function moveCursorUp(editor) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
     const selection = editor.model.document.selection;
     const position = selection.getFirstPosition();
@@ -185,8 +171,6 @@ export function moveCursorUp(editor) {
 }
 
 export function moveCursorDown(editor) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
     const selection = editor.model.document.selection;
     const position = selection.getFirstPosition();
@@ -226,8 +210,6 @@ export function moveCursorDown(editor) {
 }
 
 export function deleteWordBackward(editor) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
     let selection = editor.model.document.selection;
     let position = selection.getFirstPosition();
@@ -294,13 +276,21 @@ export function deleteWordBackward(editor) {
 }
 
 export function insertWord(editor, word) {
-  if (!ensureFocus(editor)) return;
-
   editor.model.change((writer) => {
-    if (word == "\n") {
-      editor.execute('enter');
-    }
-    else {
+    if (word === "\n") {
+      const position = editor.model.document.selection.getFirstPosition();
+      if (position) {
+        try {
+          writer.split(position);
+          const newParagraph = position.parent.nextSibling;
+          if (newParagraph) {
+            writer.setSelection(writer.createPositionAt(newParagraph, 0));
+          }
+        } catch (e) {
+          // Cannot split here (e.g. inside a non-splittable widget)
+        }
+      }
+    } else {
       const insertedRange = editor.model.insertContent(
         writer.createText(word + " "),
         editor.model.document.selection,

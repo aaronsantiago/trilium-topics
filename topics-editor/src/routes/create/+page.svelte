@@ -12,10 +12,45 @@
   let title = $state("");
   let inputEl = $state(null);
   let selectedTopics = $state([]);
+  let cursorX = $state(0);
+  let cursorY = $state(0);
+  let cursorHeight = $state(20);
+  let cursorVisible = $state(false);
+  let cursorKey = $state(0);
+  let inputWrapperEl = $state(null);
 
-  $effect(() => {
-    if (inputEl) inputEl.focus();
-  });
+  // $effect(() => {
+  //   if (inputEl) { inputEl.focus(); updateCursorPosition(); }
+  // });
+
+  function updateCursorPosition() {
+    if (!inputEl) { cursorVisible = false; return; }
+    try {
+      const pos = inputEl.selectionStart ?? title.length;
+      const textBefore = title.slice(0, pos);
+      const style = getComputedStyle(inputEl);
+
+      const mirror = document.createElement('span');
+      mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${style.font};letter-spacing:${style.letterSpacing};`;
+      mirror.textContent = textBefore;
+      document.body.appendChild(mirror);
+      const textWidth = mirror.getBoundingClientRect().width;
+      document.body.removeChild(mirror);
+
+      const paddingLeft = parseFloat(style.paddingLeft);
+      const borderLeft = parseFloat(style.borderLeftWidth);
+      const inputHeight = inputEl.offsetHeight;
+      const lineHeight = parseFloat(style.lineHeight) || inputHeight;
+
+      cursorX = borderLeft + paddingLeft + textWidth - inputEl.scrollLeft;
+      cursorHeight = Math.min(lineHeight, inputHeight * 0.7);
+      cursorY = (inputHeight - cursorHeight) / 2;
+      cursorKey++;
+      cursorVisible = true;
+    } catch (e) {
+      cursorVisible = false;
+    }
+  }
 
   async function onInsertWord(word) {
     if (document.activeElement !== inputEl) return;
@@ -30,6 +65,7 @@
     await tick();
     inputEl?.focus();
     inputEl?.setSelectionRange(newPos, newPos);
+    updateCursorPosition();
   }
 
   async function onDeleteWordBackward() {
@@ -57,6 +93,7 @@
     await tick();
     inputEl?.focus();
     inputEl?.setSelectionRange(newPos, newPos);
+    updateCursorPosition();
   }
 
   function moveCursorWordLeft() {
@@ -84,6 +121,7 @@
 
     inputEl?.focus();
     inputEl?.setSelectionRange(newPos, newPos);
+    updateCursorPosition();
   }
 
   function moveCursorWordRight() {
@@ -111,6 +149,7 @@
 
     inputEl?.focus();
     inputEl?.setSelectionRange(newPos, newPos);
+    updateCursorPosition();
   }
 
   function onMoveCursor(direction) {
@@ -163,32 +202,6 @@
     appState.selectedNoteId = tempNoteId;
     goto(base + `/note`);
 
-    // let response = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({
-    //     "title": title,
-    //     "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
-    //     "secret": topicsDbState.triliumSecret,
-    //     "content": "",
-    //     "topics": selectedTopics
-    //   }),
-    // })
-
-    // if (response.ok) {
-    //   const data = await response.json();
-
-    //   await refreshTopicsDb();
-
-    //   appState.selectedTopic = selectedTopics[0];
-    //   appState.selectedNoteName = title;
-    //   appState.selectedNoteId = data.noteId;
-    //   goto(base + `/note`);
-    // } else {
-    //   console.error("Failed to create note", response.statusText);
-    // }
   }
 
   function toggleTopic() {
@@ -207,6 +220,7 @@
     return addInputListener((e) => {
       if (["l1", "l2", "r1", "r2"].includes(e)) {
         inputEl?.focus();
+        updateCursorPosition();
       }
       if (e === "confirm") {
         if (document.activeElement?.dataset?.action === 'create') {
@@ -234,13 +248,27 @@
     <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
   </div>
   <div class="w-96 grid grid-cols-1 h-full overflow-y-auto">
-    <input
-      type="text"
-      class="input input-bordered w-full"
-      placeholder="Note title"
-      bind:value={title}
-      bind:this={inputEl}
-    />
+    <div class="relative" bind:this={inputWrapperEl}>
+      <input
+        type="text"
+        class="input input-bordered w-full caret-transparent"
+        placeholder="Note title"
+        inputmode="none"
+        bind:value={title}
+        bind:this={inputEl}
+        onfocus={() => updateCursorPosition()}
+        onblur={() => { cursorVisible = false; }}
+      />
+      {#if cursorVisible}
+        {#key cursorKey}
+          <div
+            class="custom-cursor"
+            style="left: {cursorX}px; top: {cursorY}px; height: {cursorHeight}px;"
+            aria-hidden="true"
+          ></div>
+        {/key}
+      {/if}
+    </div>
     <div>
       {#each selectedTopics as topic}
         <span class="badge badge-primary mr-1">{topic}</span>
@@ -268,3 +296,19 @@
     {/each}
   </div>
 </div>
+
+<style>
+  .custom-cursor {
+    position: absolute;
+    width: 2px;
+    background-color: currentColor;
+    pointer-events: none;
+    animation: blink 1s step-end infinite;
+    z-index: 10;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+</style>
