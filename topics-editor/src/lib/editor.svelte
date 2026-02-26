@@ -23,6 +23,7 @@
     Code,
     CodeBlock,
     Alignment,
+    scrollViewportToShowTarget,
   } from "ckeditor5";
   import "ckeditor5/ckeditor5.css";
 
@@ -34,6 +35,8 @@
   let cursorVisible = $state(false);
   let cursorKey = $state(0);
   let containerEl = $state(null);
+  let isProgrammaticScroll = false;
+
 
   const editorConfig = {
     toolbar: {
@@ -168,6 +171,10 @@
       domRange.setStart(domPos.parent, domPos.offset);
       domRange.setEnd(domPos.parent, domPos.offset);
 
+      isProgrammaticScroll = true;
+      scrollViewportToShowTarget({ target: domRange, viewportOffset: 50 });
+      requestAnimationFrame(() => { isProgrammaticScroll = false; });
+
       const rect = domRange.getBoundingClientRect();
       const containerRect = containerEl.getBoundingClientRect();
 
@@ -215,6 +222,15 @@
         updateCursorPosition(editor);
       });
 
+      // Update cursor on programmatic scroll; hide it on manual scroll
+      editableEl.addEventListener("scroll", () => {
+        if (isProgrammaticScroll) {
+          updateCursorPosition(editor);
+        } else {
+          cursorVisible = false;
+        }
+      });
+
       if (editorCallback) {
         editorCallback(editor);
       }
@@ -227,9 +243,9 @@
 
 <div
   bind:this={containerEl}
-  class="editor-container editor-container_classic-editor prose relative"
+  class="editor-container editor-container_classic-editor prose relative flex flex-col flex-1"
 >
-  <div class="editor-container__editor"><div id="editor"></div></div>
+  <div class="editor-container__editor flex flex-col flex-1"><div id="editor"></div></div>
 
   {#if cursorVisible}
     {#key cursorKey}
@@ -243,6 +259,23 @@
 </div>
 
 <style>
+  .editor-container :global(.ck.ck-editor) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .editor-container :global(.ck.ck-editor__main) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .editor-container :global(.ck.ck-editor__editable) {
+    flex: 1;
+    max-height: 90vh;
+  }
+
   .custom-cursor {
     position: absolute;
     width: 2px;

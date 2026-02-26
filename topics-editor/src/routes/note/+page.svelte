@@ -6,8 +6,17 @@
   import { addInputListener } from "$lib/inputs.js";
   import * as editorActions from "$lib/editorActions.js";
   import { goto } from "$app/navigation";
+  import dayjs from "dayjs";
 
   let editor = $state(null);
+  let humanReadableDate = $derived.by(() => {
+    if (!note?.dateCreated) return "";
+    return dayjs(note.dateCreated).format("MMMM D, YYYY");
+  });
+  let humanReadableTime = $derived.by(() => {
+    if (!note?.dateCreated) return "";
+    return dayjs(note.dateCreated).format("h:mm A");
+  });
 
   function setEditor(e) {
     editor = e;
@@ -18,20 +27,18 @@
     return notes[appState.selectedNoteId];
   });
 
-
   function editHandler(content) {
     if (!note?.noteId) return;
 
     if (topicsDbState.createdNotes[note.noteId]) {
       topicsDbState.createdNotes[note.noteId].content = content;
       return;
-    }
-    else if (topicsDbState.updatedNotes[note.noteId] == null) {
+    } else if (topicsDbState.updatedNotes[note.noteId] == null) {
       topicsDbState.updatedNotes[note.noteId] = {
         content: content,
         noteId: note.noteId,
         title: note.title,
-        dateCreated: note.dateCreated
+        dateCreated: note.dateCreated,
       };
     } else {
       topicsDbState.updatedNotes[note.noteId].content = content;
@@ -67,16 +74,17 @@
   });
 </script>
 
-<div class="flex gap-4 w-screen flex-col">
-  <div class="flex-grow">
-    <div class="">{note?.title}</div>
-    <Editor
-      {editHandler}
-      initialData={note?.content}
-      editorCallback={setEditor}
-    />
-  </div>
-  <div>
-    <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
+<Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
+
+<div class="flex h-screen overflow-hidden items-stretch">
+  <Editor {editHandler} initialData={note?.content} editorCallback={setEditor} />
+  <div class="prose m-2">
+    <h1 class="mb-[-1em]">{note?.title}</h1>
+    <h2 class="lowercase">{humanReadableDate} <br/> {humanReadableTime}</h2>
+    <div>
+      {#each note?.topics as topic}
+        <span class="badge badge-xl badge-primary mr-1">{topic}</span>
+      {/each}
+    </div>
   </div>
 </div>

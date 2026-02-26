@@ -24,7 +24,7 @@ export default defineConfig({
         description: "an editor for trilium-topics",
         theme_color: "#ffffff",
         background_color: "#ffffff",
-        display: "standalone",
+        display: "fullscreen",
         start_url: "/",
         scope: "/",
         screenshots: [

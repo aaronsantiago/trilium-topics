@@ -3,7 +3,7 @@
   import WordRing from "./wordRing.svelte";
   import { addInputListener, addAxisListener } from "$lib/inputs.js";
   import { generateT9Db } from "$lib/t8-engine.js";
-  import * as cheerio from 'cheerio';
+  import * as cheerio from "cheerio";
 
   let { onInsertWord, onDeleteWordBackward, onMoveCursor } = $props();
 
@@ -54,8 +54,8 @@
 
   $effect(() => {
     (async () => {
-    let wordList = await fetch("/master-dictionary-lowercase.txt");
-    text = await wordList.text();
+      let wordList = await fetch("/master-dictionary-lowercase.txt");
+      text = await wordList.text();
     })();
   });
 
@@ -71,9 +71,11 @@
           html("br").replaceWith("\n");
           html("code").replaceWith("\n");
 
-          html('p, div, h1, h2, h3, h4, h5, h6, li, tr, blockquote, pre').each((_, el) => {
-            html(el).append('\n');
-          });
+          html("p, div, h1, h2, h3, h4, h5, h6, li, tr, blockquote, pre").each(
+            (_, el) => {
+              html(el).append("\n");
+            },
+          );
 
           let textContent = html.text();
 
@@ -175,17 +177,24 @@
   });
 </script>
 
-<div class="flex flex-col overflow-x-scroll">
-  <div>{currentString}</div>
-  <div class="grid grid-rows-1 grid-flow-col gap-4 justify-start">
+<div
+  class={"z-100 flex flex-col overflow-x-scroll w-full h-full" +
+  " pointer-events-none absolute top-0 left-0 justify-end pb-[10vh]" +
+  "" + (currentString ? "" : "hidden")
+  }
+>
+  <div class="bg-base-300/90">{currentString}</div>
+  <div class="grid grid-rows-1 grid-flow-col gap-4 justify-start bg-base-300/85">
     {#each wordRings as words, i (words.join("-") + selectedWordRing)}
       <WordRing
         className="w-48"
         selected={i == selectedWordRing}
         xAxisValue={i == selectedWordRing ? wordSelectionXAxis : 0}
         yAxisValue={i == selectedWordRing ? wordSelectionYAxis : 0}
-        words={words}
-        selectedWordIndexUpdateCallback={i == selectedWordRing ? updateSelectedWordIndex : null}
+        {words}
+        selectedWordIndexUpdateCallback={i == selectedWordRing
+          ? updateSelectedWordIndex
+          : null}
       />
     {/each}
   </div>

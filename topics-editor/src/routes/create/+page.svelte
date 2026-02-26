@@ -253,60 +253,56 @@
   });
 </script>
 
-<div class="flex gap-4 w-screen p-4">
-  <div class="flex-grow h-full overflow-hidden">
-    <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
+<Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
+<div class="w-full grid grid-cols-1 h-full overflow-y-auto">
+  <div class="relative" bind:this={inputWrapperEl}>
+    <input
+      type="text"
+      class="input input-bordered w-full caret-transparent"
+      placeholder="Note title"
+      inputmode={usingGamepad ? "none" : null}
+      bind:value={title}
+      bind:this={inputEl}
+      onfocus={() => updateCursorPosition()}
+      onclick={() => updateCursorPosition()}
+      onkeyup={() => updateCursorPosition()}
+      onblur={() => { cursorVisible = false; }}
+    />
+    {#if cursorVisible}
+      {#key cursorKey}
+        <div
+          class="custom-cursor"
+          style="left: {cursorX}px; top: {cursorY}px; height: {cursorHeight}px;"
+          aria-hidden="true"
+        ></div>
+      {/key}
+    {/if}
   </div>
-  <div class="w-96 grid grid-cols-1 h-full overflow-y-auto">
-    <div class="relative" bind:this={inputWrapperEl}>
-      <input
-        type="text"
-        class="input input-bordered w-full caret-transparent"
-        placeholder="Note title"
-        inputmode={usingGamepad ? "none" : null}
-        bind:value={title}
-        bind:this={inputEl}
-        onfocus={() => updateCursorPosition()}
-        onclick={() => updateCursorPosition()}
-        onkeyup={() => updateCursorPosition()}
-        onblur={() => { cursorVisible = false; }}
-      />
-      {#if cursorVisible}
-        {#key cursorKey}
-          <div
-            class="custom-cursor"
-            style="left: {cursorX}px; top: {cursorY}px; height: {cursorHeight}px;"
-            aria-hidden="true"
-          ></div>
-        {/key}
-      {/if}
-    </div>
-    <div>
-      {#each selectedTopics as topic}
-        <span class="badge badge-primary mr-1">{topic}</span>
-      {/each}
-    </div>
-    <button
-      class="btn mt-2 btn-soft btn-primary outline-none focus:bg-secondary focus:text-secondary-content"
-      tabindex="0"
-      data-action="create"
-      disabled={title.trim() === "" || selectedTopics.length == 0}
-      onclick={createNote}
-    >Create</button>
-    {#each topics as topic}
-      <div
-        class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1 cursor-pointer"
-        tabindex="0"
-        data-topic={topic}
-        onclick={toggleTopic}
-      >
-        {topic}
-        {#if selectedTopics.includes(topic)}
-          <span class="badge badge-primary ml-1">✓</span>
-        {/if}
-      </div>
+  <div>
+    {#each selectedTopics as topic}
+      <span class="badge badge-primary mr-1">{topic}</span>
     {/each}
   </div>
+  <button
+    class="btn mt-2 btn-soft btn-primary outline-none focus:bg-secondary focus:text-secondary-content"
+    tabindex="0"
+    data-action="create"
+    disabled={title.trim() === "" || selectedTopics.length == 0}
+    onclick={createNote}
+  >Create</button>
+  {#each topics as topic}
+    <div
+      class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1 cursor-pointer"
+      tabindex="0"
+      data-topic={topic}
+      onclick={toggleTopic}
+    >
+      {topic}
+      {#if selectedTopics.includes(topic)}
+        <span class="badge badge-primary ml-1">✓</span>
+      {/if}
+    </div>
+  {/each}
 </div>
 
 <style>
