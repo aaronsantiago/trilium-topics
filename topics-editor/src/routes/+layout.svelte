@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
 	import './layout.css';
 	import { pwaInfo } from 'virtual:pwa-info';
-	import { generateBreadcrumbs } from '$lib/appState.svelte.js';
+	import { generateBreadcrumbs, initializeAppState } from '$lib/appState.svelte.js';
 	import { base } from '$app/paths';
 	import { initInputs, addAxisListener, addInputListener } from '$lib/inputs.js';
-	import { initializeAppState } from '$lib/appState.svelte.js';
 	import { goto } from '$app/navigation';
+	import FloatingButton from './floatingButton.svelte';
 
 	onMount(async () => {
 
@@ -45,22 +45,6 @@
       }
     });
   })
-
-  $effect (() => {
-    return addInputListener((e) => {
-      if (e === 'menu') {
-        if (floatingButton) {
-          if (document.activeElement === floatingButton) {
-            floatingButton.blur();
-          } else {
-            floatingButton.focus();
-          }
-        }
-      }
-    });
-  });
-
-  let floatingButton = $state(null);
 </script>
 
 <svelte:head>
@@ -68,24 +52,7 @@
 </svelte:head>
 
 <div class="h-screen">
-  <div class="fab fab-flower">
-    <!-- a focusable div with tabindex is necessary to work on all browsers. role="button" is necessary for accessibility -->
-    <div bind:this={floatingButton} tabindex="0" role="button" class="btn btn-circle btn-lg">
-      !
-    </div>
-    <div class="btn btn-circle btn-lg">
-      !
-    </div>
-    <button class="btn btn-circle btn-lg" onclick={() => {goto(base + "/create")}}>
-      +
-    </button>
-    <button class="btn btn-circle btn-lg" onclick={() => {goto(base + "/settings")}}>
-      S
-    </button>
-    <button class="btn btn-circle btn-lg" onclick={() => {goto(base + "/")}}>
-      H
-    </button>
-  </div>
+  <FloatingButton />
   <!-- <div class="navbar bg-base-100 shadow-sm">
     <div class="breadcrumbs text-sm">
       <ul>

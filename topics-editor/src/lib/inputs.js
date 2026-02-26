@@ -1,5 +1,7 @@
 let listeners = [];
 
+let releasedListeners = [];
+
 let axisListeners = [];
 
 function removeInputListener(listener) {
@@ -8,6 +10,14 @@ function removeInputListener(listener) {
 export function addInputListener(listener) {
   listeners.push(listener);
   return () => removeInputListener(listener);
+}
+
+function removeInputReleasedListener(listener) {
+  releasedListeners = releasedListeners.filter(l => l !== listener);
+}
+export function addInputReleasedListener(listener) {
+  releasedListeners.push(listener);
+  return () => removeInputReleasedListener(listener);
 }
 
 function removeAxisListener(listener) {
@@ -21,6 +31,10 @@ export function addAxisListener(listener) {
 
 function handleInput(event) {
   listeners.forEach(listener => listener(event));
+}
+
+function handleInputReleased(event) {
+  releasedListeners.forEach(listener => listener(event));
 }
 
 function handleAxis(event) {
@@ -100,6 +114,23 @@ export function initInputs() {
     if (i == 15) handleInput("right");
   }
 
+  function dispatchButtonReleasedEvent(i) {
+    if (i == 8) handleInputReleased("cancel");
+    if (i == 1) handleInputReleased("confirm");
+    if (i == 2) handleInputReleased("special");
+    if (i == 3) handleInputReleased("delete");
+    if (i == 4) handleInputReleased("l1");
+    if (i == 5) handleInputReleased("r1");
+    if (i == 6) handleInputReleased("l2");
+    if (i == 7) handleInputReleased("r2");
+    if (i == 9) handleInputReleased("menu");
+    if (i == 10) handleInputReleased("l3");
+    if (i == 12) handleInputReleased("up");
+    if (i == 13) handleInputReleased("down");
+    if (i == 14) handleInputReleased("left");
+    if (i == 15) handleInputReleased("right");
+  }
+
   let updateGamepad = () => {
     var gamepads = navigator.getGamepads();
     for (let gamepad of gamepads) {
@@ -138,6 +169,9 @@ export function initInputs() {
             }
           }
         } else {
+          if (keyState[i]) {
+            dispatchButtonReleasedEvent(i);
+          }
           keyState[i] = false;
           delete holdTimestamps[i];
         }
