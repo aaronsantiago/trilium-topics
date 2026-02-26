@@ -67,16 +67,16 @@
   });
 </script>
 
-<div class="flex gap-4 w-screen">
+<div class="flex gap-4 w-screen flex-col">
   <div class="flex-grow">
-    <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
-  </div>
-  <div>
     <div class="">{note?.title}</div>
     <Editor
       {editHandler}
       initialData={note?.content}
       editorCallback={setEditor}
     />
+  </div>
+  <div>
+    <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
   </div>
 </div>

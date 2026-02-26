@@ -54,8 +54,8 @@
 
   $effect(() => {
     (async () => {
-    let wordList = await fetch("/google-10000-english-usa.txt");
-    let text = await wordList.text();
+    let wordList = await fetch("/master-dictionary-lowercase.txt");
+    text = await wordList.text();
     })();
   });
 
@@ -126,8 +126,11 @@
       }
 
       if (e == "special") {
-        console.log('t9 words overridden')
-        t9WordsOverride = [".", "\n", "!", "?", ",", "-", ":", ";"];
+        if (t9WordsOverride) {
+          t9WordsOverride = null;
+        } else {
+          t9WordsOverride = [".", "\n", "!", "?", ",", "-", ":", ";"];
+        }
       }
 
       if (e == "l3") {
@@ -172,18 +175,18 @@
   });
 </script>
 
-{#each wordRings as words, i (words.join("-") + selectedWordRing)}
-  <WordRing
-    selected={i == selectedWordRing}
-    xAxisValue={i == selectedWordRing ? wordSelectionXAxis : 0}
-    yAxisValue={i == selectedWordRing ? wordSelectionYAxis : 0}
-    words={words}
-    selectedWordIndexUpdateCallback={i == selectedWordRing ? updateSelectedWordIndex : null}
-  />
-{/each}
-<div>{currentString}</div>
-<div>
-  {#each t9Words as word, i}
-    <div>{word}</div>
-  {/each}
+<div class="flex flex-col overflow-x-scroll">
+  <div>{currentString}</div>
+  <div class="grid grid-rows-1 grid-flow-col gap-4 justify-start">
+    {#each wordRings as words, i (words.join("-") + selectedWordRing)}
+      <WordRing
+        className="w-48"
+        selected={i == selectedWordRing}
+        xAxisValue={i == selectedWordRing ? wordSelectionXAxis : 0}
+        yAxisValue={i == selectedWordRing ? wordSelectionYAxis : 0}
+        words={words}
+        selectedWordIndexUpdateCallback={i == selectedWordRing ? updateSelectedWordIndex : null}
+      />
+    {/each}
+  </div>
 </div>

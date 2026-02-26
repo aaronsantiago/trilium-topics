@@ -92,6 +92,7 @@ export function initInputs() {
     if (i == 5) handleInput("r1");
     if (i == 6) handleInput("l2");
     if (i == 7) handleInput("r2");
+    if (i == 9) handleInput("menu");
     if (i == 10) handleInput("l3");
     if (i == 12) handleInput("up");
     if (i == 13) handleInput("down");
