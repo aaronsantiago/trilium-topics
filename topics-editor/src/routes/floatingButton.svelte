@@ -57,6 +57,8 @@
         createButton?.focus();
       } else if (buttonSelectionYAxis < -0.5) {
         homeButton?.focus();
+      } else {
+        floatingButton?.focus();
       }
     }
   })

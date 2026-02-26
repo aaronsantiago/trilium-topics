@@ -53,9 +53,6 @@
 
 </script>
 
-<a href={base +"/settings"} class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1">Settings</a>
-<a href={base +"/create"} class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1">Create</a>
-
 {#each topics as topic}
   <div
     class="card bg-base-100 w-96 shadow-sm group outline-none"

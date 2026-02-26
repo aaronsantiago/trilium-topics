@@ -40,9 +40,10 @@ function handleInputReleased(event) {
 function handleAxis(event) {
   axisListeners.forEach(listener => listener(event));
 }
-
+let inputsInitialized = false;
 export function initInputs() {
-
+  if (inputsInitialized) return;
+  inputsInitialized = true;
   window.addEventListener("keydown", (e) => {
     // if (e.key == "3") {
     //   handleInput("l2")
