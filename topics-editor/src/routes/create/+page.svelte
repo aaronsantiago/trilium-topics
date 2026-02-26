@@ -19,9 +19,6 @@
   let cursorKey = $state(0);
   let inputWrapperEl = $state(null);
 
-  // $effect(() => {
-  //   if (inputEl) { inputEl.focus(); updateCursorPosition(); }
-  // });
 
   function updateCursorPosition() {
     if (!inputEl) { cursorVisible = false; return; }
