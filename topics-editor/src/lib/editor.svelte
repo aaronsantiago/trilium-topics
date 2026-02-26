@@ -205,9 +205,6 @@
       const editableEl = editor.editing.view.getDomRoot();
       editableEl.setAttribute("inputmode", "none");
 
-      // Prevent touch from focusing the editable (which would open keyboard)
-      editableEl.addEventListener("pointerdown", (e) => e.preventDefault(), { passive: false });
-
       editor.model.document.on("change:data", () => {
         console.log("change detected");
         editHandler(editor.getData());

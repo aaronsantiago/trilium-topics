@@ -8,6 +8,7 @@
   import { tick } from 'svelte';
   import dayjs from "dayjs";
   import { getNextFocus } from '@bbc/tv-lrud-spatial';
+  import { onMount } from "svelte";
 
   let title = $state("");
   let inputEl = $state(null);
@@ -19,6 +20,16 @@
   let cursorKey = $state(0);
   let inputWrapperEl = $state(null);
 
+  // we need to optionally disable the native mobile keyboard
+  // because we are providing our own custom keyboard and the native one can get in the way
+  // but if the user is using touch input, they likely want the native keyboard, so we only disable it when we detect gamepad input
+  let usingGamepad = $state(false);
+
+  onMount(() => {
+
+    inputEl.addEventListener("pointerdown", (e) => {usingGamepad = false});
+
+  });
 
   function updateCursorPosition() {
     if (!inputEl) { cursorVisible = false; return; }
@@ -215,6 +226,8 @@
 
   $effect(() => {
     return addInputListener((e) => {
+      usingGamepad = true;
+
       if (["l1", "l2", "r1", "r2"].includes(e)) {
         inputEl?.focus();
         updateCursorPosition();
@@ -250,10 +263,12 @@
         type="text"
         class="input input-bordered w-full caret-transparent"
         placeholder="Note title"
-        inputmode="none"
+        inputmode={usingGamepad ? "none" : null}
         bind:value={title}
         bind:this={inputEl}
         onfocus={() => updateCursorPosition()}
+        onclick={() => updateCursorPosition()}
+        onkeyup={() => updateCursorPosition()}
         onblur={() => { cursorVisible = false; }}
       />
       {#if cursorVisible}
