@@ -8,6 +8,7 @@
   let { onInsertWord, onDeleteWordBackward, onMoveCursor } = $props();
 
   let t9Db = $state({});
+  let baseT9Db = $state({});
   let currentString = $state("");
   let selectedWordIndex = $state(0);
   let selectedWordRing = $state(0);
@@ -30,13 +31,32 @@
       curT9Db = curT9Db[c];
     }
 
-    return curT9Db.entries || [];
+    let finalWords = curT9Db.entries || [];
+
+    curT9Db = baseT9Db;
+    for (let c of currentString) {
+      if (!(c in curT9Db)) {
+        return [];
+      }
+      curT9Db = curT9Db[c];
+    }
+
+    return [...finalWords, ...(curT9Db.entries || [])];
   });
 
   $effect(() => {
     t9Words;
 
     selectedWordRing = 0;
+  });
+
+  $effect(() => {
+    selectedWordRing;
+
+    let currentRingEl = document.getElementById("word-ring-" + selectedWordRing);
+    if (currentRingEl) {
+      currentRingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   });
 
   let wordRings = $derived.by(() => {
@@ -50,16 +70,24 @@
     return rings;
   });
 
-  let text = $state("");
-
   $effect(() => {
     (async () => {
+      let startTime = Date.now();
       let wordList = await fetch("/master-dictionary-lowercase.txt");
-      text = await wordList.text();
+      let text = await wordList.text();
+      let textWordList = text.split("\n").map((w) => w.trim());
+
+      baseT9Db = generateT9Db(textWordList);
+
+      console.log(
+        "Base T9 DB generated in " + (Date.now() - startTime) + "ms",
+      );
     })();
   });
 
   $effect(() => {
+    console.log("Generating T9 DB...");
+    let startTime = Date.now();
     let notes = getNotes();
     (async () => {
       let notesWordMap = {};
@@ -91,8 +119,27 @@
       let wordsWithCounts = Object.entries(notesWordMap);
       wordsWithCounts.sort((a, b) => b[1] - a[1]);
       let noteWordList = wordsWithCounts.map(([word, count]) => word);
-      let noteDictionary = noteWordList.join("\n") + "\n" + text;
-      t9Db = generateT9Db(noteDictionary);
+      let wordSet = new Set([...noteWordList]);
+      console.log("initial word set generated in " + (Date.now() - startTime) + "ms");
+      for (let word of noteWordList) {
+        let rootWord = word;
+        let suffixes = ["s", "e", "ed", "ing", "ly"];
+        for (let suffix of suffixes) {
+          if (rootWord.endsWith(suffix)) {
+            rootWord = rootWord.slice(0, -suffix.length);
+          }
+        }
+        wordSet.add(rootWord);
+        for (let suffix of suffixes) {
+          wordSet.add(word + suffix);
+          wordSet.add(rootWord + suffix);
+        }
+      }
+      let wordList = Array.from(wordSet);
+      console.log("Note word list generated in " + (Date.now() - startTime) + "ms");
+      t9Db = generateT9Db(wordList);
+
+      console.log("T9 DB generated in " + (Date.now() - startTime) + "ms");
     })();
   });
 
@@ -187,7 +234,9 @@
   <div class="grid grid-rows-1 grid-flow-col gap-4 justify-start bg-base-300/85">
     {#each wordRings as words, i (words.join("-") + selectedWordRing)}
       <WordRing
-        className="w-48"
+        id={"word-ring-" + i}
+        className={"w-48"}
+        style={"opacity: " + Math.pow(0.7, Math.abs(i - selectedWordRing))}
         selected={i == selectedWordRing}
         xAxisValue={i == selectedWordRing ? wordSelectionXAxis : 0}
         yAxisValue={i == selectedWordRing ? wordSelectionYAxis : 0}

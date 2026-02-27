@@ -25,35 +25,34 @@ for (let input in t4) {
   }
 }
 
-function generateT9Db(inputFile) {
-  let allWords = inputFile.split('\n');
-
-  let wordPriority = {};
-  for (let [i, word] of allWords.entries()) {
-    allWords[i] = word.trim();
-    wordPriority[word] = i;
+let lastT9DbCache = null;
+let lastT9DbWordCount = -1;
+function generateT9Db(allWords) {
+  if (allWords.length == lastT9DbWordCount && lastT9DbCache) {
+    return lastT9DbCache;
   }
-
   let t9Db = {};
   for (let word of allWords) {
     let curT9Db = t9Db;
     for (let [i, c] of word.split('').entries()) {
-      c = mapping[c.toLowerCase()];
+      c = mapping[c];
       if (!c) {
         break;
       }
       if (!(c in curT9Db)) {
         curT9Db[c] = {
-          entries:[],
+          entries:new Set([]),
         };
       }
-      if (curT9Db[c].entries.indexOf(word) === -1 && (i == word.length - 1)) {
-        curT9Db[c].entries.push(word);
+      if (i == word.length - 1) {
+        curT9Db[c].entries.add(word);
       }
       curT9Db = curT9Db[c];
     }
   }
 
+  lastT9DbCache = t9Db;
+  lastT9DbWordCount = allWords.length;
   return t9Db;
 }
 
