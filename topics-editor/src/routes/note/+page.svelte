@@ -38,6 +38,7 @@
         content: content,
         noteId: note.noteId,
         title: note.title,
+        topics: note.topics,
         dateCreated: note.dateCreated,
       };
     } else {
