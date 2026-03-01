@@ -37,7 +37,6 @@
   let containerEl = $state(null);
   let isProgrammaticScroll = false;
 
-
   const editorConfig = {
     toolbar: {
       items: [
@@ -159,13 +158,23 @@
   function updateCursorPosition(editor) {
     try {
       const modelPos = editor.model.document.selection.getFirstPosition();
-      if (!modelPos) { cursorVisible = false; return; }
+      if (!modelPos) {
+        cursorVisible = false;
+        return;
+      }
 
       const viewPos = editor.editing.mapper.toViewPosition(modelPos);
-      if (!viewPos) { cursorVisible = false; return; }
+      if (!viewPos) {
+        cursorVisible = false;
+        return;
+      }
 
-      const domPos = editor.editing.view.domConverter.viewPositionToDom(viewPos);
-      if (!domPos) { cursorVisible = false; return; }
+      const domPos =
+        editor.editing.view.domConverter.viewPositionToDom(viewPos);
+      if (!domPos) {
+        cursorVisible = false;
+        return;
+      }
 
       const domRange = document.createRange();
       domRange.setStart(domPos.parent, domPos.offset);
@@ -173,18 +182,24 @@
 
       isProgrammaticScroll = true;
       scrollViewportToShowTarget({ target: domRange, viewportOffset: 50 });
-      requestAnimationFrame(() => { isProgrammaticScroll = false; });
+      requestAnimationFrame(() => {
+        isProgrammaticScroll = false;
+      });
 
       const rect = domRange.getBoundingClientRect();
       const containerRect = containerEl.getBoundingClientRect();
 
       if (rect.width === 0 && rect.height === 0 && rect.top === 0) {
         // Fallback for empty paragraphs: use parent element rect
-        const parentEl = domPos.parent.nodeType === Node.TEXT_NODE
-          ? domPos.parent.parentElement
-          : domPos.parent;
+        const parentEl =
+          domPos.parent.nodeType === Node.TEXT_NODE
+            ? domPos.parent.parentElement
+            : domPos.parent;
         const parentRect = parentEl?.getBoundingClientRect();
-        if (!parentRect) { cursorVisible = false; return; }
+        if (!parentRect) {
+          cursorVisible = false;
+          return;
+        }
         cursorX = parentRect.left - containerRect.left;
         cursorY = parentRect.top - containerRect.top;
         cursorHeight = parentRect.height || 20;
@@ -197,6 +212,7 @@
       cursorKey++;
       cursorVisible = true;
     } catch (e) {
+      console.log("cursor error", e)
       cursorVisible = false;
     }
   }
@@ -217,8 +233,9 @@
         editHandler(editor.getData());
       });
 
-      // Track cursor on all model changes (selection-only changes don't fire change:data)
-      editor.model.document.on("change", () => {
+      // Track cursor after view renders (model `change` fires before the view downcast
+      // completes, causing toViewPosition to fail; `render` fires after DOM is synced)
+      editor.editing.view.on("render", () => {
         updateCursorPosition(editor);
       });
 
@@ -245,7 +262,9 @@
   bind:this={containerEl}
   class="editor-container editor-container_classic-editor prose relative flex flex-col flex-1"
 >
-  <div class="editor-container__editor flex flex-col flex-1"><div id="editor"></div></div>
+  <div class="editor-container__editor flex flex-col flex-1">
+    <div id="editor"></div>
+  </div>
 
   {#if cursorVisible}
     {#key cursorKey}
@@ -286,7 +305,12 @@
   }
 
   @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
   }
 </style>
