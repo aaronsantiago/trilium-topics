@@ -81,10 +81,10 @@
 </script>
 
 <div class="flex flex-row w-full h-full bg-base-200">
-  <div class="flex flex-col gap-4 h-full overflow-y-scroll">
+  <div class="flex flex-col gap-4 h-full overflow-y-scroll flex-grow flex-shrink-0">
     {#each topics as topic}
       <div
-        class="card bg-base-100 w-64 shadow-sm group outline-none"
+        class="card bg-base-100 shadow-sm group outline-none"
         id={"topic_" + topic}
         tabindex="0"
         data-topic={topic}
