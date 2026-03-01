@@ -27,6 +27,9 @@ export default defineConfig({
         display: "fullscreen",
         start_url: "/",
         scope: "/",
+        includeAssets: [
+            "*.txt"
+        ],
         screenshots: [
           {
             src: "screenshot.png",
