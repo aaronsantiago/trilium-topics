@@ -2,7 +2,6 @@
 
   let { id, style, xAxisValue, yAxisValue, selectedWordIndexUpdateCallback, words, selected, className } = $props();
 
-  $effect(() => console.log(words));
   let orderMapping = [6, 7, 8, 5, 0, 1, 4, 3, 2]
 
   // let xAxisValue = 0;
