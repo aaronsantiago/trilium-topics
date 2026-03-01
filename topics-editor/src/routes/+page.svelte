@@ -22,7 +22,7 @@
     const allNotes = getNotes();
     if (!allNotes) return [];
     return Object.values(allNotes)
-      .sort((a, b) => dayjs(b.dateModified).valueOf() - dayjs(a.dateModified).valueOf())
+      .sort((a, b) => dayjs(b.dateCreated).valueOf() - dayjs(a.dateCreated).valueOf())
       .slice(0, 5);
   });
 
@@ -99,25 +99,27 @@
 
   <div class="flex flex-col gap-4 flex-1 bg-base-300 p-4 rounded-lg overflow-x-scroll h-full">
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>
-    <div class="flex flex-row gap-4 flex-grow">
+    <div class="flex flex-row gap-4 flex-grow h-[80%]">
       {#each recentNotes as note}
         <div
-          class="card bg-base-100 w-94 shadow-sm group outline-none flex-shrink-0 overflow-hidden"
+          class="card h-full bg-base-100 w-128 shadow-sm group outline-none flex-shrink-0 overflow-hidden text-ellipsis"
           id={"note_" + note.noteId}
           tabindex="0"
           data-note-id={note.noteId}
           onclick={() => navigateToNote(note)}
         >
-          <div class="card-body group-focus:bg-secondary group-focus:text-secondary-content wrap-break-word">
+          <div class="h-full card-body group-focus:bg-secondary group-focus:text-secondary-content wrap-break-word">
             <div class="card-title text-xl">{note.title}</div>
             {#if note.topics?.length > 0}
               <div class="text-sm opacity-60">{note.topics[0]}</div>
             {/if}
-            {#if topicsDbState?.updatedNotes?.[note.noteId]}
-              {@html topicsDbState.updatedNotes[note.noteId].content}
-            {:else}
-              {@html note.content}
-            {/if}
+            <div class="overflow-hidden max-h-full [&_p]:my-0.5 [&_li]:my-0 prose">
+              {#if topicsDbState?.updatedNotes?.[note.noteId]}
+                {@html topicsDbState.updatedNotes[note.noteId].content}
+              {:else}
+                {@html note.content}
+              {/if}
+            </div>
           </div>
         </div>
       {/each}
