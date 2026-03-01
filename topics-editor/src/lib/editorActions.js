@@ -281,11 +281,12 @@ export function insertWord(editor, word) {
       const position = editor.model.document.selection.getFirstPosition();
       if (position) {
         try {
-          writer.split(position);
-          const newParagraph = position.parent.nextSibling;
-          if (newParagraph) {
-            writer.setSelection(writer.createPositionAt(newParagraph, 0));
-          }
+          // writer.split(position);
+          editor.execute("enter");
+          // const newParagraph = position.parent.nextSibling;
+          // if (newParagraph) {
+          //   writer.setSelection(writer.createPositionAt(newParagraph, 0));
+          // }
         } catch (e) {
           // Cannot split here (e.g. inside a non-splittable widget)
         }
