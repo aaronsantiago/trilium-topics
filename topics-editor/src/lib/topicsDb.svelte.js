@@ -180,27 +180,25 @@ async function refreshTopicsDb() {
     isRefreshing = false;
     return;
   };
-  (async () => {
-    try {
-      const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          secret: topicsDbState.triliumSecret
-        })
-      });
+  try {
+    const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        secret: topicsDbState.triliumSecret
+      })
+    });
 
-      topicsDbState.topicsDb = await response.json();
-      refreshNotes();
-    } catch (error) {
-      console.error("Error fetching topicsDb: ", error);
-    }
-    finally {
-      isRefreshing = false;
-    }
-  })();
+    topicsDbState.topicsDb = await response.json();
+    refreshNotes();
+  } catch (error) {
+    console.error("Error fetching topicsDb: ", error);
+  }
+  finally {
+    isRefreshing = false;
+  }
 }
 
 async function refreshNotes() {
