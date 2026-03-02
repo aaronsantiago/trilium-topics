@@ -284,7 +284,7 @@
     {/each}
   </div>
   <button
-    class="btn mt-2 btn-soft btn-primary outline-none focus:bg-secondary focus:text-secondary-content"
+    class="btn mt-2 btn-soft btn-primary outline-none transition-transform focus:scale-[1.02] focus:shadow-xl"
     tabindex="0"
     data-action="create"
     disabled={title.trim() === "" || selectedTopics.length == 0}
@@ -292,7 +292,7 @@
   >Create</button>
   {#each topics as topic}
     <div
-      class="outline-none focus:bg-secondary focus:text-secondary-content rounded px-2 py-1 cursor-pointer"
+      class="outline-none transition-transform focus:scale-[1.02] focus:shadow-xl rounded px-2 py-1 cursor-pointer"
       tabindex="0"
       data-topic={topic}
       onclick={toggleTopic}
