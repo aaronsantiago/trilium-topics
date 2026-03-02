@@ -1,3 +1,5 @@
+import { appState } from './appState.svelte.js';
+
 let listeners = [];
 
 let releasedListeners = [];
@@ -98,6 +100,15 @@ export function initInputs() {
   let keyState = {};
   let holdTimestamps = {};
 
+  function remapButton(i) {
+    if (appState.buttonLayout !== 'swapped') return i;
+    if (i === 0) return 1;
+    if (i === 1) return 0;
+    if (i === 2) return 3;
+    if (i === 3) return 2;
+    return i;
+  }
+
   function dispatchButtonEvent(i) {
     if (i == 8) handleInput("cancel");
     if (i == 1) handleInput("confirm");
@@ -156,7 +167,7 @@ export function initInputs() {
           const now = performance.now();
           if (!keyState[i]) {
             console.log("Pressed: " + i);
-            dispatchButtonEvent(i);
+            dispatchButtonEvent(remapButton(i));
             keyState[i] = true;
             if (DPAD_BUTTONS.has(i)) {
               holdTimestamps[i] = { pressedAt: now, lastRepeatAt: now };
@@ -165,13 +176,13 @@ export function initInputs() {
             const { pressedAt, lastRepeatAt } = holdTimestamps[i];
             if (now - pressedAt >= REPEAT_INITIAL_DELAY_MS &&
                 now - lastRepeatAt >= REPEAT_INTERVAL_MS) {
-              dispatchButtonEvent(i);
+              dispatchButtonEvent(remapButton(i));
               holdTimestamps[i].lastRepeatAt = now;
             }
           }
         } else {
           if (keyState[i]) {
-            dispatchButtonReleasedEvent(i);
+            dispatchButtonReleasedEvent(remapButton(i));
           }
           keyState[i] = false;
           delete holdTimestamps[i];

@@ -1,7 +1,7 @@
 <script>
   import { topicsDbState, getNotes } from "$lib/topicsDb.svelte.js";
   import WordRing from "./wordRing.svelte";
-  import { addInputListener, addAxisListener } from "$lib/inputs.js";
+  import { addInputListener, addAxisListener, addInputReleasedListener } from "$lib/inputs.js";
   import { generateT9Db } from "$lib/t8-engine.js";
   import * as cheerio from "cheerio";
 
@@ -175,11 +175,7 @@
       }
 
       if (e == "special") {
-        if (t9WordsOverride) {
-          t9WordsOverride = null;
-        } else {
-          t9WordsOverride = [".", "\n", "!", "?", ",", "-", ":", ";"];
-        }
+        t9WordsOverride = [".", "\n", "!", "?", ",", "-", ":", ";"];
       }
 
       if (e == "l3") {
@@ -222,12 +218,25 @@
       }
     });
   });
+
+  $effect(() => {
+    return addInputReleasedListener((e) => {
+      if (e === 'special' && t9WordsOverride) {
+        let word = t9Words[selectedWordRing * 9 + selectedWordIndex];
+        if (word) {
+          currentString = "";
+          onInsertWord(word);
+        }
+        t9WordsOverride = null;
+      }
+    });
+  });
 </script>
 
 <div
   class={"z-100 flex flex-col overflow-x-scroll w-full h-full" +
   " pointer-events-none absolute top-0 left-0 justify-end pb-[10vh]" +
-  "" + (currentString ? "" : "hidden")
+  "" + (currentString || t9WordsOverride ? "" : "hidden")
   }
 >
   <div class="bg-base-300/90">{currentString}</div>

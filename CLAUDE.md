@@ -111,3 +111,7 @@ Trilium Notes (server)
 - The active feature branch is `claude/claude-md-mm3yqxjud5csni96-kySAh`.
 - There is no CI/CD pipeline — deployment is manual via `pnpm deploy` from `topics-editor/`.
 - No test suite exists; validate changes manually in a browser with a gamepad or by reviewing component logic.
+
+## Testing Policy
+
+**Claude must never run tests or attempt to validate/verify changes.** All testing and validation is done manually by the user. Do not run `pnpm dev`, `pnpm build`, or any other command for the purpose of testing or verifying that changes work.
