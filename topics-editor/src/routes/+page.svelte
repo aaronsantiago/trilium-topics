@@ -80,13 +80,13 @@
   <div class="order-last md:order-none grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:flex-grow md:flex-shrink-0 md:p-0">
     {#each topics as topic}
       <div
-        class="card bg-base-100 shadow-sm group outline-none"
+        class="card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl"
         id={"topic_" + topic}
         tabindex="0"
         data-topic={topic}
         onclick={() => navigateToTopic(topic)}
       >
-        <div class="card-body group-focus:bg-secondary group-focus:text-secondary-content">
+        <div class="card-body">
           <div class="card-title text-2xl">{topic}</div>
         </div>
       </div>
