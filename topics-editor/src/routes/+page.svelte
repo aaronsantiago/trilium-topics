@@ -5,6 +5,7 @@
   import { base } from '$app/paths';
   import { addInputListener } from "$lib/inputs.js";
   import { getNextFocus } from '@bbc/tv-lrud-spatial';
+  import NoteCollection from '$lib/NoteCollection.svelte';
   import dayjs from 'dayjs';
 
   initialize();
@@ -67,14 +68,9 @@
 
   let focusInitialized = false;
   $effect(() => {
-    if (!focusInitialized) {
-      if (recentNotes.length > 0) {
-        focusInitialized = true;
-        document.getElementById('note_' + recentNotes[0].noteId)?.focus();
-      } else if (topics.length > 0) {
-        focusInitialized = true;
-        document.getElementById('topic_' + topics[0])?.focus();
-      }
+    if (!focusInitialized && recentNotes.length === 0 && topics.length > 0) {
+      focusInitialized = true;
+      document.getElementById('topic_' + topics[0])?.focus();
     }
   });
 
@@ -99,30 +95,6 @@
 
   <div class="flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-x-scroll h-full">
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>
-    <div class="flex flex-row gap-4 flex-grow min-h-0">
-      {#each recentNotes as note}
-        <div
-          class="overflow-hidden card bg-base-100 w-128 shadow-sm group outline-none flex-shrink-0 overflow-hidden text-ellipsis"
-          id={"note_" + note.noteId}
-          tabindex="0"
-          data-note-id={note.noteId}
-          onclick={() => navigateToNote(note)}
-        >
-          <div class="min-h-0 overflow-hidden card-body group-focus:bg-secondary group-focus:text-secondary-content wrap-break-word">
-            <div class="card-title text-xl">{note.title}</div>
-            {#if note.topics?.length > 0}
-              <div class="text-sm opacity-60">{note.topics[0]}</div>
-            {/if}
-            <div class="overflow-hidden [&_p]:my-0.5 [&_li]:my-0 prose">
-              {#if topicsDbState?.updatedNotes?.[note.noteId]}
-                {@html topicsDbState.updatedNotes[note.noteId].content}
-              {:else}
-                {@html note.content}
-              {/if}
-            </div>
-          </div>
-        </div>
-      {/each}
-    </div>
+    <NoteCollection notes={recentNotes} onNoteClick={navigateToNote} layout="horizontal" />
   </div>
 </div>
