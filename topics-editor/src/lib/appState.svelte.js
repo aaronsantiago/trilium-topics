@@ -5,7 +5,8 @@ import {topicsDbState} from './topicsDb.svelte.js';
 let appState = $state({
   selectedTopic: '',
   selectedNoteName: '',
-  selectedNoteId: ''
+  selectedNoteId: '',
+  buttonLayout: 'standard'
 });
 
 // initialize appState
@@ -14,6 +15,7 @@ let appState = $state({
   appState.selectedTopic = await get('selectedTopic') || '';
   appState.selectedNoteName = await get('selectedNoteName') || '';
   appState.selectedNoteId = await get('selectedNoteId') || '';
+  appState.buttonLayout = await get('buttonLayout') || 'standard';
 })();
 
 function initializeAppState() {
@@ -27,6 +29,10 @@ function initializeAppState() {
 
   $effect(() => {
     if (appState.selectedNoteId) set('selectedNoteId', appState.selectedNoteId);
+  });
+
+  $effect(() => {
+    set('buttonLayout', appState.buttonLayout);
   });
 }
 
