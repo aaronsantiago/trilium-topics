@@ -77,11 +77,16 @@
 
 <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
 
-<div class="flex h-screen overflow-hidden items-stretch">
+<div class="flex flex-col md:flex-row h-screen overflow-hidden items-stretch">
   <Editor {editHandler} initialData={note?.content} editorCallback={setEditor} />
-  <div class="prose m-2">
+  <div class="prose m-2 order-first md:order-none w-full md:w-auto">
     <h1 class="mb-[-1em]">{note?.title}</h1>
-    <h2 class="lowercase">{humanReadableDate} <br/> {humanReadableTime}</h2>
+    <h2 class="lowercase">
+      <span>{humanReadableDate}</span>
+      <span class="hidden md:inline"><br/></span>
+      <span class="md:hidden"> · </span>
+      <span>{humanReadableTime}</span>
+    </h2>
     <div>
       {#each note?.topics as topic}
         <span class="badge badge-xl badge-primary mr-1">{topic}</span>
