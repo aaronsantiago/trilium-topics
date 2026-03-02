@@ -1,9 +1,10 @@
 <script>
   import {appState} from '$lib/appState.svelte.js';
-  import {topicsDbState, getNotes} from '$lib/topicsDb.svelte.js';
+  import {getNotes} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
   import { addInputListener } from "$lib/inputs.js";
   import { getNextFocus } from '@bbc/tv-lrud-spatial';
+  import NoteCollection from '$lib/NoteCollection.svelte';
   import dayjs from 'dayjs';
 
   let notes = $derived.by(() => {
@@ -48,31 +49,7 @@
     });
   });
 
-  let focusInitialized = false;
-  $effect(() => {
-    if (notes.length > 0 && !focusInitialized) {
-      focusInitialized = true;
-      document.getElementById('note_' + notes[0].noteId)?.focus();
-    }
-  });
 
 </script>
 
-{#each notes as note}
-  <div
-    class="card card-m group outline-none"
-    id={"note_" + note.noteId}
-    tabindex="0"
-    data-note-id={note.noteId}
-    onclick={() => navigateToNote(note)}
-  >
-    <div class="card-body group-focus:bg-secondary group-focus:text-secondary-content">
-      <div class="card-title text-2xl">{note.title}</div>
-      {#if (topicsDbState && topicsDbState.updatedNotes && topicsDbState.updatedNotes[note.noteId])}
-        {@html topicsDbState.updatedNotes[note.noteId].content}
-      {:else}
-        {@html note.content}
-      {/if}
-    </div>
-  </div>
-{/each}
+<NoteCollection notes={notes} onNoteClick={navigateToNote} />
