@@ -76,8 +76,8 @@
 
 </script>
 
-<div class="flex flex-row w-full h-full bg-base-200">
-  <div class="flex flex-col gap-4 h-full overflow-y-scroll flex-grow flex-shrink-0">
+<div class="flex flex-col md:flex-row w-full h-full bg-base-200">
+  <div class="order-last md:order-none grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:flex-grow md:flex-shrink-0 md:p-0">
     {#each topics as topic}
       <div
         class="card bg-base-100 shadow-sm group outline-none"
@@ -93,8 +93,8 @@
     {/each}
   </div>
 
-  <div class="flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-x-scroll h-full">
+  <div class="flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-none md:overflow-y-hidden md:overflow-x-scroll md:h-full">
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>
-    <NoteCollection notes={recentNotes} onNoteClick={navigateToNote} layout="horizontal" />
+    <NoteCollection notes={recentNotes} onNoteClick={navigateToNote} layout="responsive" />
   </div>
 </div>
