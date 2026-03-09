@@ -14,6 +14,9 @@ export default defineConfig({
     SvelteKitPWA({
       registerType: "autoUpdate",
       trailingSlash: "always",
+      includeAssets: [
+          "*.txt"
+      ],
       devOptions: {
         enabled: true,
         /* other options */
@@ -27,9 +30,6 @@ export default defineConfig({
         display: "fullscreen",
         start_url: "/",
         scope: "/",
-        includeAssets: [
-            "*.txt"
-        ],
         screenshots: [
           {
             src: "screenshot.png",
