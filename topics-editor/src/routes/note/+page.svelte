@@ -77,7 +77,7 @@
 
 <Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
 
-<div class="flex flex-col md:flex-row h-screen overflow-hidden items-stretch">
+<div class="flex flex-col md:flex-row h-screen overflow-hidden items-stretch mb-48">
   <Editor {editHandler} initialData={note?.content} editorCallback={setEditor} />
   <div class="prose m-2 order-first md:order-none w-full md:w-auto">
     <h1 class="mb-[-1em]">{note?.title}</h1>
