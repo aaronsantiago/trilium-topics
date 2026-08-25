@@ -32,6 +32,16 @@ function getNotes() {
   return notes;
 }
 
+function getQuicknotes() {
+  let quicknoteMeta = topicsDbState.topicsDb?.quicknotes || [];
+  let allNotes = notes;
+  return quicknoteMeta
+    .slice()
+    .sort((a, b) => a.notePosition - b.notePosition)
+    .map((meta) => allNotes[meta.noteId])
+    .filter(Boolean);
+}
+
 
 // initialize topicsDb
 (async () => {
@@ -203,32 +213,40 @@ async function refreshTopicsDb() {
   })();
 }
 
+async function refreshNoteIfStale(note) {
+  if (!topicsDbState.dbNotes[note.noteId] || topicsDbState.dbNotes[note.noteId].dateModified != note.dateModified) {
+    console.log("updated note: ", note.noteId);
+    try {
+      let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          secret: topicsDbState.triliumSecret,
+          noteId: note.noteId
+        })
+      });
+      topicsDbState.dbNotes[note.noteId] = await noteResponse.json();
+
+    } catch (error) {
+      console.error("Error fetching note: ", error);
+    }
+  }
+}
+
 async function refreshNotes() {
   if (!topicsDbState.topicsDb) return;
   if (topicsDbState.dbNotes == null) topicsDbState.dbNotes = {};
 
   for (let topicNote of (topicsDbState?.topicsDb?.children || [])) {
     for (let note of topicNote.children) {
-      if (!topicsDbState.dbNotes[note.noteId] || topicsDbState.dbNotes[note.noteId].dateModified != note.dateModified) {
-        console.log("updated note: ", note.noteId);
-        try {
-          let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              secret: topicsDbState.triliumSecret,
-              noteId: note.noteId
-            })
-          });
-          topicsDbState.dbNotes[note.noteId] = await noteResponse.json();
-
-        } catch (error) {
-          console.error("Error fetching note: ", error);
-        }
-      }
+      await refreshNoteIfStale(note);
     }
+  }
+
+  for (let note of (topicsDbState?.topicsDb?.quicknotes || [])) {
+    await refreshNoteIfStale(note);
   }
 }
 
@@ -239,4 +257,4 @@ function resetDb() {
   topicsDbState.createdNotes = {};
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, resetDb };
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, resetDb };

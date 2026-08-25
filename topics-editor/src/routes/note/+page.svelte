@@ -69,7 +69,7 @@
   $effect(() => {
     return addInputListener((e) => {
       if (e == "cancel") {
-        goto(`/topic`);
+        goto(appState.selectedTopic ? `/topic` : `/`);
       }
     });
   });
