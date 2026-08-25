@@ -11,6 +11,7 @@
   import { addInputListener } from "$lib/inputs.js";
   import { getNextFocus } from "@bbc/tv-lrud-spatial";
   import NoteCollection from "$lib/NoteCollection.svelte";
+  import QuicknoteCard from "$lib/QuicknoteCard.svelte";
   import dayjs from "dayjs";
 
   initialize();
@@ -131,6 +132,7 @@
           notes={quicknotes}
           onNoteClick={navigateToNote}
           layout="stripResponsive"
+          cardComponent={QuicknoteCard}
         />
       </div>
     </div>
