@@ -166,12 +166,58 @@ async function checkCreatedNotes() {
   }
 }
 
+// An update stays in updatedNotes (masking the stale dbNotes copy) until a refresh
+// proves the server took it. Otherwise the note briefly reverts to its old state,
+// which makes quicknotes disappear/reappear as the filters and sort re-evaluate.
+const UPLOAD_CONFIRM_TIMEOUT_MS = 30000;
+const pendingUploads = new Map(); // noteId -> { dateModified, at, payload }
+
+const SYNCED_FIELDS = ['content', 'isTodo', 'todoDone'];
+function syncedFieldsMatch(a, b) {
+  if (!a || !b) return false;
+  if (SYNCED_FIELDS.some((field) => a[field] !== b[field])) return false;
+  return JSON.stringify([...(a.topics ?? [])].sort()) === JSON.stringify([...(b.topics ?? [])].sort());
+}
+
+function reconcilePendingUploads() {
+  for (let [noteId, pending] of pendingUploads) {
+    let current = topicsDbState.updatedNotes?.[noteId];
+    if (!current) {
+      pendingUploads.delete(noteId);
+      continue;
+    }
+    if (!syncedFieldsMatch(current, pending.payload)) {
+      // edited again since the upload — re-upload next tick, keep masking until then
+      pendingUploads.delete(noteId);
+      continue;
+    }
+    let dbNote = topicsDbState.dbNotes?.[noteId];
+    let confirmed = dbNote && dbNote.dateModified !== pending.dateModified;
+    let expired = Date.now() - pending.at > UPLOAD_CONFIRM_TIMEOUT_MS;
+    if (!confirmed && !expired) continue;
+    if (!confirmed) console.warn("Dropping unconfirmed note update: ", noteId);
+    pendingUploads.delete(noteId);
+    // dbNotes already holds the server copy, so this hand-off is invisible
+    delete topicsDbState.updatedNotes[noteId];
+  }
+}
+
 async function checkUpdatedNotes() {
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
-  if (!Object.keys(topicsDbState?.updatedNotes || {}).length) return;
+  let noteIds = Object.keys(topicsDbState?.updatedNotes || {});
+  if (!noteIds.length) return;
 
-  let updatedNotesToDelete = []
-  for (let updatedNoteId in topicsDbState.updatedNotes) {
+  let uploadedAny = false;
+  for (let updatedNoteId of noteIds) {
+    let entry = topicsDbState.updatedNotes[updatedNoteId];
+    if (!entry) continue;
+    let pending = pendingUploads.get(updatedNoteId);
+    if (pending) {
+      // unchanged since it went up — leave it masking dbNotes until a refresh confirms it
+      if (syncedFieldsMatch(entry, pending.payload)) continue;
+      pendingUploads.delete(updatedNoteId); // edited again, send the newer version now
+    }
+    let payload = $state.snapshot(entry);
     try {
       await fetch(topicsDbState.triliumUrl + '/custom/set-note', {
         method: 'POST',
@@ -181,37 +227,41 @@ async function checkUpdatedNotes() {
         body: JSON.stringify({
           secret: topicsDbState.triliumSecret,
           noteId: updatedNoteId,
-          content: topicsDbState.updatedNotes[updatedNoteId].content,
-          topics: topicsDbState.updatedNotes[updatedNoteId].topics,
-          isTodo: topicsDbState.updatedNotes[updatedNoteId].isTodo,
-          todoDone: topicsDbState.updatedNotes[updatedNoteId].todoDone,
+          content: payload.content,
+          topics: payload.topics,
+          isTodo: payload.isTodo,
+          todoDone: payload.todoDone,
         })
       });
       console.log("Uploaded updated note: ", updatedNoteId);
-      updatedNotesToDelete.push(updatedNoteId);
+      pendingUploads.set(updatedNoteId, {
+        dateModified: topicsDbState.dbNotes?.[updatedNoteId]?.dateModified ?? null,
+        at: Date.now(),
+        payload,
+      });
+      uploadedAny = true;
     }
     catch (error) {
       console.error("Error uploading updated note: ", error);
     }
   }
 
-  for (let noteId of updatedNotesToDelete) {
-    delete topicsDbState.updatedNotes[noteId];
-  }
-  if (updatedNotesToDelete?.length > 0) {
+  if (uploadedAny) {
     await sleep(1500);
-    refreshTopicsDb();
+    await refreshTopicsDb(); // reconcilePendingUploads runs at the end of refreshNotes
+  } else if (pendingUploads.size) {
+    // still masking an uploaded edit whose refresh never landed — poll for it
+    await refreshTopicsDb();
   }
 }
-let isRefreshing = false;
-async function refreshTopicsDb() {
-  if (isRefreshing) return;
-  isRefreshing = true;
-  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret){
-    isRefreshing = false;
-    return;
-  };
-  (async () => {
+
+// resolves only once the whole refresh (including refreshNotes) is done, so callers
+// can await the server copy actually landing in dbNotes
+let refreshPromise = null;
+function refreshTopicsDb() {
+  if (refreshPromise) return refreshPromise;
+  if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return Promise.resolve();
+  refreshPromise = (async () => {
     try {
       const response = await fetch(topicsDbState.triliumUrl + '/custom/get-topic-notes', {
         method: 'POST',
@@ -224,35 +274,39 @@ async function refreshTopicsDb() {
       });
 
       topicsDbState.topicsDb = await response.json();
-      refreshNotes();
+      await refreshNotes();
     } catch (error) {
       console.error("Error fetching topicsDb: ", error);
     }
     finally {
-      isRefreshing = false;
+      refreshPromise = null;
     }
   })();
+  return refreshPromise;
 }
 
-async function refreshNoteIfStale(note) {
-  if (!topicsDbState.dbNotes[note.noteId] || topicsDbState.dbNotes[note.noteId].dateModified != note.dateModified) {
-    console.log("updated note: ", note.noteId);
-    try {
-      let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          secret: topicsDbState.triliumSecret,
-          noteId: note.noteId
-        })
-      });
-      topicsDbState.dbNotes[note.noteId] = await noteResponse.json();
+function isNoteStale(note) {
+  let dbNote = topicsDbState.dbNotes[note.noteId];
+  return !dbNote || dbNote.dateModified != note.dateModified;
+}
 
-    } catch (error) {
-      console.error("Error fetching note: ", error);
-    }
+async function fetchNote(noteId) {
+  console.log("updated note: ", noteId);
+  try {
+    let noteResponse = await fetch(topicsDbState.triliumUrl + '/custom/get-note', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        secret: topicsDbState.triliumSecret,
+        noteId: noteId
+      })
+    });
+    return await noteResponse.json();
+  } catch (error) {
+    console.error("Error fetching note: ", error);
+    return null;
   }
 }
 
@@ -260,15 +314,29 @@ async function refreshNotes() {
   if (!topicsDbState.topicsDb) return;
   if (topicsDbState.dbNotes == null) topicsDbState.dbNotes = {};
 
+  // collect first so dbNotes is written once, instead of re-rendering every list
+  // between each round trip (a quicknote can also live under a topic, hence the Set)
+  let staleNoteIds = new Set();
   for (let topicNote of (topicsDbState?.topicsDb?.children || [])) {
-    for (let note of topicNote.children) {
-      await refreshNoteIfStale(note);
+    for (let note of (topicNote.children || [])) {
+      if (isNoteStale(note)) staleNoteIds.add(note.noteId);
     }
   }
-
   for (let note of (topicsDbState?.topicsDb?.quicknotes || [])) {
-    await refreshNoteIfStale(note);
+    if (isNoteStale(note)) staleNoteIds.add(note.noteId);
   }
+
+  let fetched = [];
+  for (let noteId of staleNoteIds) {
+    let note = await fetchNote(noteId);
+    if (note) fetched.push([noteId, note]);
+  }
+
+  for (let [noteId, note] of fetched) {
+    topicsDbState.dbNotes[noteId] = note;
+  }
+
+  reconcilePendingUploads();
 }
 
 function resetDb() {
@@ -276,6 +344,7 @@ function resetDb() {
   topicsDbState.dbNotes = null;
   topicsDbState.updatedNotes = {};
   topicsDbState.createdNotes = {};
+  pendingUploads.clear();
 }
 
 export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, queueNoteUpdate, resetDb };

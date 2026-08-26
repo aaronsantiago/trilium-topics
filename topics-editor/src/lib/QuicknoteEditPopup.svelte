@@ -66,11 +66,22 @@
     }
   }
 
+  const topicKey = (list) => JSON.stringify([...(list ?? [])].sort());
+
   export function commit() {
     for (const id of Object.keys(staged)) {
       const s = staged[id];
+      const note = notes.find((n) => n.noteId === id);
+      const topics = $state.snapshot(s.topics);
+      // queueing an untouched note would re-upload its content and bump dateModified,
+      // forcing a needless refetch of every note in the selection
+      const changed =
+        !note ||
+        !!note.isTodo !== s.isTodo ||
+        topicKey(topics) !== topicKey(note.topics);
+      if (!changed) continue;
       queueNoteUpdate(id, {
-        topics: $state.snapshot(s.topics),
+        topics,
         isTodo: s.isTodo,
         ...(s.isTodo ? {} : { todoDone: false }),
       });

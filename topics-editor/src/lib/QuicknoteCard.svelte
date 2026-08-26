@@ -1,8 +1,8 @@
 <script>
-  import { topicsDbState, queueNoteUpdate } from '$lib/topicsDb.svelte.js';
+  import { topicsDbState } from '$lib/topicsDb.svelte.js';
   import dayjs from 'dayjs';
 
-  let { note, onclick, onedit, selected = false, class: className = '' } = $props();
+  let { note, onclick, onedit, onmarkdone, selected = false, class: className = '' } = $props();
 
   let content = $derived(
     topicsDbState?.updatedNotes?.[note.noteId]?.content ?? note.content
@@ -14,7 +14,7 @@
 
   function markDone(e) {
     e.stopPropagation();
-    queueNoteUpdate(note.noteId, { todoDone: true });
+    onmarkdone?.();
   }
 
   function handleEdit(e) {

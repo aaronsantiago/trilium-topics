@@ -72,6 +72,20 @@
     target?.focus();
   }
 
+  // the card unmounts as soon as it's done, so hand focus to a neighbour first —
+  // otherwise focus falls to <body> and D-pad navigation has nothing to move from
+  async function markTodoDone(noteId) {
+    const card = document.getElementById("note_" + noteId);
+    const next = card
+      ? getNextFocus(card, "ArrowRight") ||
+        getNextFocus(card, "ArrowDown") ||
+        getNextFocus(card, "ArrowLeft")
+      : null;
+    queueNoteUpdate(noteId, { todoDone: true });
+    await tick();
+    if (next && document.contains(next)) next.focus();
+  }
+
   function navigateToTopic(topic) {
     appState.selectedTopic = topic;
     goto(base + `/topic`);
@@ -134,7 +148,7 @@
         const noteId = document.activeElement?.dataset?.noteId;
         const note = quicknotes.find((n) => n.noteId === noteId);
         if (note?.isTodo && !note?.todoDone) {
-          queueNoteUpdate(noteId, { todoDone: true });
+          markTodoDone(noteId);
         }
       }
     });
@@ -190,6 +204,7 @@
           layout="stripResponsive"
           cardComponent={QuicknoteCard}
           onCardEdit={(note) => toggleEditing(note.noteId)}
+          onCardMarkDone={(note) => markTodoDone(note.noteId)}
           isSelected={(note) => editingIds.includes(note.noteId)}
         />
       </div>

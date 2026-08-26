@@ -1,7 +1,7 @@
 <script>
   import NoteCard from '$lib/NoteCard.svelte';
 
-  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, isSelected } = $props();
+  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, onCardMarkDone, isSelected } = $props();
 
   let focusInitialized = false;
   $effect(() => {
@@ -27,6 +27,7 @@
       selected={isSelected?.(note) ?? false}
       onclick={() => onNoteClick(note)}
       onedit={onCardEdit ? () => onCardEdit(note) : undefined}
+      onmarkdone={onCardMarkDone ? () => onCardMarkDone(note) : undefined}
     />
   {/each}
 </div>
