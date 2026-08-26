@@ -1,6 +1,6 @@
 <script>
   import { appState } from "$lib/appState.svelte.js";
-  import { topicsDbState, getNotes } from "$lib/topicsDb.svelte.js";
+  import { topicsDbState, getNotes, queueNoteUpdate } from "$lib/topicsDb.svelte.js";
   import Editor from "$lib/editor.svelte";
   import Keyboard from "$lib/keyboard/keyboard.svelte";
   import { addInputListener } from "$lib/inputs.js";
@@ -33,17 +33,8 @@
     if (topicsDbState.createdNotes[note.noteId]) {
       topicsDbState.createdNotes[note.noteId].content = content;
       return;
-    } else if (topicsDbState.updatedNotes[note.noteId] == null) {
-      topicsDbState.updatedNotes[note.noteId] = {
-        content: content,
-        noteId: note.noteId,
-        title: note.title,
-        topics: note.topics,
-        dateCreated: note.dateCreated,
-      };
-    } else {
-      topicsDbState.updatedNotes[note.noteId].content = content;
     }
+    queueNoteUpdate(note.noteId, { content });
   }
 
   function onInsertWord(word) {

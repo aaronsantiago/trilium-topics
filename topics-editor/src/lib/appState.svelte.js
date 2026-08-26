@@ -6,7 +6,8 @@ let appState = $state({
   selectedTopic: '',
   selectedNoteName: '',
   selectedNoteId: '',
-  buttonLayout: 'standard'
+  buttonLayout: 'standard',
+  modalOpen: false
 });
 
 // initialize appState

@@ -5,6 +5,7 @@
     initialize,
     getNotes,
     getQuicknotes,
+    queueNoteUpdate,
   } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
   import { base } from "$app/paths";
@@ -12,7 +13,9 @@
   import { getNextFocus } from "@bbc/tv-lrud-spatial";
   import NoteCollection from "$lib/NoteCollection.svelte";
   import QuicknoteCard from "$lib/QuicknoteCard.svelte";
+  import QuicknoteEditPopup from "$lib/QuicknoteEditPopup.svelte";
   import dayjs from "dayjs";
+  import { tick } from "svelte";
 
   initialize();
 
@@ -44,6 +47,31 @@
       .slice(0, 5);
   });
 
+  let editingIds = $state([]);
+  let editorOpen = $derived(editingIds.length > 0);
+  let editingNotes = $derived.by(() => {
+    const allNotes = getNotes();
+    return editingIds.map((id) => allNotes[id]).filter(Boolean);
+  });
+  let editPanel = $state(null);
+
+  function toggleEditing(noteId) {
+    if (!noteId) return;
+    editingIds = editingIds.includes(noteId)
+      ? editingIds.filter((id) => id !== noteId)
+      : [...editingIds, noteId];
+  }
+
+  async function closeQuicknoteEditor() {
+    editingIds = [];
+    // the panel (which held focus) unmounts — put focus back on the page
+    await tick();
+    const target =
+      document.querySelector("[data-note-id]") ??
+      document.querySelector("[data-topic]");
+    target?.focus();
+  }
+
   function navigateToTopic(topic) {
     appState.selectedTopic = topic;
     goto(base + `/topic`);
@@ -63,6 +91,9 @@
     right: "ArrowRight",
   };
 
+  const focusIsInEditPanel = () =>
+    !!document.activeElement?.closest("#quicknoteEditPanel");
+
   $effect(() => {
     return addInputListener((e) => {
       if (directionMap[e]) {
@@ -72,8 +103,17 @@
           next.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       } else if (e === "confirm") {
+        if (focusIsInEditPanel()) {
+          document.activeElement?.click();
+          return;
+        }
         const noteId = document.activeElement?.dataset?.noteId;
         if (noteId) {
+          // while editing, confirm adds/removes quicknotes from the selection
+          if (editorOpen && quicknotes.find((n) => n.noteId === noteId)) {
+            toggleEditing(noteId);
+            return;
+          }
           const note =
             recentNotes.find((n) => n.noteId === noteId) ||
             quicknotes.find((n) => n.noteId === noteId);
@@ -82,6 +122,19 @@
           const topic = document.activeElement?.dataset?.topic;
           if (topic) navigateToTopic(topic);
           else document.activeElement?.click();
+        }
+      } else if (e === "special") {
+        const noteId = document.activeElement?.dataset?.noteId;
+        if (quicknotes.find((n) => n.noteId === noteId)) {
+          toggleEditing(noteId);
+        }
+      } else if (e === "cancel") {
+        if (editorOpen) editPanel?.commit();
+      } else if (e === "r1") {
+        const noteId = document.activeElement?.dataset?.noteId;
+        const note = quicknotes.find((n) => n.noteId === noteId);
+        if (note?.isTodo && !note?.todoDone) {
+          queueNoteUpdate(noteId, { todoDone: true });
         }
       }
     });
@@ -104,6 +157,8 @@
 <div class="flex flex-col md:flex-row w-full h-full bg-base-200">
   <div
     class="order-3 md:order-1 grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
+    class:lrud-ignore={editorOpen}
+    inert={editorOpen}
   >
     {#each topics as topic}
       <div
@@ -130,16 +185,29 @@
       >
         <NoteCollection
           notes={quicknotes}
-          onNoteClick={navigateToNote}
+          onNoteClick={(note) =>
+            editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
           layout="stripResponsive"
           cardComponent={QuicknoteCard}
+          onCardEdit={(note) => toggleEditing(note.noteId)}
+          isSelected={(note) => editingIds.includes(note.noteId)}
         />
       </div>
     </div>
   {/if}
 
+  {#if editingNotes.length > 0}
+    <QuicknoteEditPopup
+      bind:this={editPanel}
+      notes={editingNotes}
+      onclose={closeQuicknoteEditor}
+    />
+  {/if}
+
   <div
-    class="order-1 md:order-3 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-none md:overflow-y-hidden md:overflow-x-scroll md:h-full"
+    class="order-1 md:order-4 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-none md:overflow-y-hidden md:overflow-x-scroll md:h-full"
+    class:lrud-ignore={editorOpen}
+    inert={editorOpen}
   >
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>
     <NoteCollection

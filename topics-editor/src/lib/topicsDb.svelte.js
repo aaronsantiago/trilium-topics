@@ -39,7 +39,25 @@ function getQuicknotes() {
     .slice()
     .sort((a, b) => a.notePosition - b.notePosition)
     .map((meta) => allNotes[meta.noteId])
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((note) => !(note.isTodo && note.todoDone))
+    .filter((note) => note.isTodo || !(note.topics?.length > 0))
+    .sort((a, b) => (a.isTodo ? 0 : 1) - (b.isTodo ? 0 : 1));
+}
+
+function queueNoteUpdate(noteId, changes) {
+  if (!noteId) return;
+  if (topicsDbState.createdNotes?.[noteId]) {
+    Object.assign(topicsDbState.createdNotes[noteId], changes);
+    return;
+  }
+  // updatedNotes is null until the idb hydration IIFE resolves
+  if (topicsDbState.updatedNotes == null) topicsDbState.updatedNotes = {};
+  if (topicsDbState.updatedNotes[noteId] == null) {
+    topicsDbState.updatedNotes[noteId] = { ...(notes[noteId] || {}), ...changes, noteId };
+  } else {
+    Object.assign(topicsDbState.updatedNotes[noteId], changes);
+  }
 }
 
 
@@ -164,6 +182,9 @@ async function checkUpdatedNotes() {
           secret: topicsDbState.triliumSecret,
           noteId: updatedNoteId,
           content: topicsDbState.updatedNotes[updatedNoteId].content,
+          topics: topicsDbState.updatedNotes[updatedNoteId].topics,
+          isTodo: topicsDbState.updatedNotes[updatedNoteId].isTodo,
+          todoDone: topicsDbState.updatedNotes[updatedNoteId].todoDone,
         })
       });
       console.log("Uploaded updated note: ", updatedNoteId);
@@ -257,4 +278,4 @@ function resetDb() {
   topicsDbState.createdNotes = {};
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, resetDb };
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, queueNoteUpdate, resetDb };

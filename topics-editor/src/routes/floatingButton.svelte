@@ -2,9 +2,11 @@
   import { base } from '$app/paths';
 	import { addAxisListener, addInputListener, addInputReleasedListener } from '$lib/inputs.js';
 	import { goto } from '$app/navigation';
+	import { appState } from '$lib/appState.svelte.js';
 
   $effect (() => {
     return addInputListener((e) => {
+      if (appState.modalOpen) return;
       if (e === 'menu') {
         if (floatingButton) {
           if (document.activeElement != floatingButton) {
