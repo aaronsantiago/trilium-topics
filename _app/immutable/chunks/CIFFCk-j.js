@@ -1,1 +1,0 @@
-import{e as t,d as S,f as b,q as d,S as h}from"./D5-_b9Qk.js";function u(r,f){return r===f||r?.[h]===f}function T(r={},f,a,k){return t(()=>{var i,s;return S(()=>{i=s,s=[],b(()=>{r!==a(...s)&&(f(r,...s),i&&u(a(...i),r)&&f(null,...i))})}),()=>{d(()=>{s&&u(a(...s),r)&&f(null,...s)})}}),r}export{T as b};
