@@ -7,7 +7,21 @@ function getChildrenPojo(note, notePojo, depth = 1) {
     let childPojo = child.getPojo();
     childPojo = getChildrenPojo(child, childPojo, depth - 1);
     childPojo.topics = [];
+    childPojo.quicknote = false;
+    childPojo.isTodo = false;
+    childPojo.todoDone = false;
+
     for (let attribute of child.ownedAttributes) {
+      if (attribute.name.startsWith("quicknote")) {
+        childPojo.quicknote = true;
+      }
+      if (attribute.name == "todo") {
+        childPojo.isTodo = true;
+      }
+      if (attribute.name == "done") {
+        childPojo.todoDone = true;
+      }
+
       if (attribute.name.startsWith("t_")) {
         childPojo.topics.push(attribute.name.slice(2));
       }
@@ -33,9 +47,15 @@ else if (req.method == "POST") {
 
   if (secret === api.currentNote.getLabel("secret").value) {
     const targetParentNote = api.currentNote.getRelation("targetNote").targetNote;
+    const quicknoteParent = api.currentNote.getRelation("quicknoteParent").targetNote;
 
     let notePojo = targetParentNote.getPojo();
     notePojo = getChildrenPojo(targetParentNote, notePojo, 2);
+
+    let quickNotePojo = quicknoteParent.getPojo();
+    quickNotePojo = getChildrenPojo(quicknoteParent, quickNotePojo, 1);
+
+    notePojo.quicknotes = quickNotePojo.children;
 
     res.status(201).json(notePojo);
   }

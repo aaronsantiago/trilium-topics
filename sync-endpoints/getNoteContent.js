@@ -21,6 +21,28 @@ else if (req.method == "POST") {
         notePojo.topics.push(attribute.name.slice(2));
       }
     }
+
+    notePojo.topics = [];
+    notePojo.quicknote = false;
+    notePojo.isTodo = false;
+    notePojo.todoDone = false;
+
+    for (let attribute of note.ownedAttributes) {
+      if (attribute.name.startsWith("quicknote")) {
+        notePojo.quicknote = true;
+      }
+      if (attribute.name == "todo") {
+        notePojo.isTodo = true;
+      }
+      if (attribute.name == "done") {
+        notePojo.todoDone = true;
+      }
+
+      if (attribute.name.startsWith("t_")) {
+        notePojo.topics.push(attribute.name.slice(2));
+      }
+    }
+
     res.status(200).json(notePojo);
   } else {
     res.send(400);
