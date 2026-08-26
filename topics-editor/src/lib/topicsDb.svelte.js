@@ -35,14 +35,59 @@ function getNotes() {
 function getQuicknotes() {
   let quicknoteMeta = topicsDbState.topicsDb?.quicknotes || [];
   let allNotes = notes;
-  return quicknoteMeta
+  // pending quicknotes aren't in topicsDb.quicknotes yet (they ride the
+  // createdNotes queue), so prepend them, newest first
+  let pendingQuicknotes = Object.values(topicsDbState.createdNotes || {})
+    .filter((note) => note?.quicknote)
+    .sort((a, b) => (b.recordedAt || 0) - (a.recordedAt || 0));
+  let serverQuicknotes = quicknoteMeta
     .slice()
     .sort((a, b) => a.notePosition - b.notePosition)
     .map((meta) => allNotes[meta.noteId])
-    .filter(Boolean)
+    .filter(Boolean);
+  // the todos-first sort is stable, so a fresh note lands at the top of
+  // the non-todo section
+  return [...pendingQuicknotes, ...serverQuicknotes]
     .filter((note) => !(note.isTodo && note.todoDone))
     .filter((note) => note.isTodo || !(note.topics?.length > 0))
     .sort((a, b) => (a.isTodo ? 0 : 1) - (b.isTodo ? 0 : 1));
+}
+
+// ids of all quicknotes (server + pending) — keeps pending quicknotes out of
+// the Recent list while they wait for upload
+function getQuicknoteIds() {
+  let ids = new Set(
+    (topicsDbState.topicsDb?.quicknotes || []).map((n) => n.noteId),
+  );
+  for (let noteId in topicsDbState.createdNotes || {}) {
+    if (topicsDbState.createdNotes[noteId]?.quicknote) ids.add(noteId);
+  }
+  return ids;
+}
+
+// true while the note is still in the createdNotes queue as a quicknote
+// (topic/todo staging can't round-trip through index-create until it lands)
+function isPendingQuicknote(noteId) {
+  return !!topicsDbState.createdNotes?.[noteId]?.quicknote;
+}
+
+// queue a quicknote for upload to /custom/index-create (pebble endpoint);
+// the optimistic note rides the createdNotes queue like create-page notes,
+// but checkCreatedNotes POSTs it as multipart transcription + recordedAt
+function queueQuicknote(text) {
+  const tempNoteId = crypto.randomUUID();
+  const now = Date.now();
+  if (topicsDbState.createdNotes == null) topicsDbState.createdNotes = {};
+  topicsDbState.createdNotes[tempNoteId] = {
+    title: dayjs(now).format("MMMM D - h:mmA - YYYY") + " quicknote",
+    noteId: tempNoteId,
+    dateCreated: dayjs(now).format("YYYY-MM-DD HH:mm:ss.SSS").concat(dayjs(now).format("Z").replace(':', '')),
+    // escape so the text renders literally (card, Trilium, editor)
+    content: text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
+    topics: [],
+    quicknote: true,
+    recordedAt: now,
+  };
 }
 
 function queueNoteUpdate(noteId, changes) {
@@ -125,29 +170,51 @@ async function checkCreatedNotes() {
   let createdNotesToDelete = [];
   let editorNoteId = null;
   for (let createdNoteId in topicsDbState.createdNotes) {
+    let entry = topicsDbState.createdNotes[createdNoteId];
     try {
-      let result = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          "title": topicsDbState.createdNotes[createdNoteId].title,
-          "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
-          "secret": topicsDbState.triliumSecret,
-          "content": topicsDbState.createdNotes[createdNoteId].content,
-          "topics": topicsDbState.createdNotes[createdNoteId].topics
-        })
-      });
+      if (entry.quicknote) {
+        // quicknotes go to the pebble endpoint (multipart transcription +
+        // recordedAt); it returns no note id, so the editor id is resolved
+        // by content match below. The secret travels as a body field (not a
+        // TRILIUM-SECRET header): Trilium's global CORS middleware answers
+        // preflights with a fixed Content-Type,Authorization allow-list, so
+        // a custom request header would fail the preflight
+        const form = new FormData();
+        form.append("transcription", entry.content);
+        form.append("recordedAt", String(entry.recordedAt));
+        form.append("secret", topicsDbState.triliumSecret);
+        await fetch(topicsDbState.triliumUrl + "/custom/index-create", {
+          method: "POST",
+          body: form,
+        });
 
-      let resultJson = await result.json();
+        console.log("Uploaded quicknote: ", createdNoteId);
 
-      console.log("Uploaded created note: ", createdNoteId, resultJson.noteId);
+        createdNotesToDelete.push(createdNoteId);
+      } else {
+        let result = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            "title": topicsDbState.createdNotes[createdNoteId].title,
+            "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
+            "secret": topicsDbState.triliumSecret,
+            "content": topicsDbState.createdNotes[createdNoteId].content,
+            "topics": topicsDbState.createdNotes[createdNoteId].topics
+          })
+        });
 
-      if (appState.selectedNoteId == createdNoteId) {
-        editorNoteId = resultJson.noteId;
+        let resultJson = await result.json();
+
+        console.log("Uploaded created note: ", createdNoteId, resultJson.noteId);
+
+        if (appState.selectedNoteId == createdNoteId) {
+          editorNoteId = resultJson.noteId;
+        }
+        createdNotesToDelete.push(createdNoteId);
       }
-      createdNotesToDelete.push(createdNoteId);
     }
     catch (error) {
       console.error("Error uploading updated note: ", error);
@@ -158,6 +225,21 @@ async function checkCreatedNotes() {
     await sleep(1500);
     await refreshTopicsDb();
     for (let noteId of createdNotesToDelete) {
+      let entry = topicsDbState.createdNotes[noteId];
+      if (entry?.quicknote && appState.selectedNoteId == noteId) {
+        // index-create returns no note id — resolve the real one by content
+        // match in the refreshed quicknotes (newest match wins)
+        let matches = (topicsDbState.topicsDb?.quicknotes || [])
+          .map((meta) => meta.noteId)
+          .filter((id) => topicsDbState.dbNotes?.[id]?.content === entry.content);
+        if (matches.length > 0) {
+          matches.sort((a, b) =>
+            dayjs(topicsDbState.dbNotes[b].dateCreated).valueOf() -
+            dayjs(topicsDbState.dbNotes[a].dateCreated).valueOf()
+          );
+          editorNoteId = matches[0];
+        }
+      }
       delete topicsDbState.createdNotes[noteId];
     }
     if (editorNoteId) {
@@ -347,4 +429,4 @@ function resetDb() {
   pendingUploads.clear();
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, queueNoteUpdate, resetDb };
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, getQuicknoteIds, isPendingQuicknote, queueQuicknote, queueNoteUpdate, resetDb };

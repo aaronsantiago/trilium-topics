@@ -24,6 +24,9 @@
   let focusInitialized = false;
   $effect(() => {
     if (autoFocus && notes.length > 0 && !focusInitialized) {
+      // don't steal focus from an active text input (e.g. the home
+      // quicknote input) when its first submitted card appears
+      if (document.activeElement?.tagName === 'INPUT') return;
       focusInitialized = true;
       document.getElementById('note_' + notes[0].noteId)?.focus();
     }

@@ -93,18 +93,26 @@ function parseMultipartFields(req) {
 }
 
 if (req.method === "OPTIONS") {
+  // NOTE: Trilium's global CORS middleware actually answers preflights itself
+  // (204 with a fixed Content-Type,Authorization allow-list) before this
+  // script runs — which is why the PWA cannot send a custom request header
+  // and instead sends the secret as a multipart field (see below).
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, TRILIUM-SECRET');
   res.send(200);
 } else if (req.method === "POST") {
-  const secret = req.get("TRILIUM-SECRET");
     res.send(200);
-  if (secret !== api.currentNote.getLabel("secret").value) {
-      res.send(400);
-  }
-  else {
     parseMultipartFields(req).then(fields => {
+        // secret via TRILIUM-SECRET header (Pebble watch — no browser preflight)
+        // or via multipart field (PWA — custom request headers fail Trilium's
+        // global CORS preflight)
+        const secret = req.get("TRILIUM-SECRET") || fields.secret;
+        if (secret !== api.currentNote.getLabel("secret").value) {
+            res.send(400);
+            return;
+        }
+
         const { transcription, recordedAt } = fields;
         console.log(transcription, recordedAt);
 
@@ -129,5 +137,4 @@ if (req.method === "OPTIONS") {
         console.log("multipart parse error:", err);
         res.status(400).send('bad request');
     });
-    }
 }

@@ -2,6 +2,10 @@
 
 A monorepo of tools that turn [Trilium Notes](https://github.com/zadam/trilium) into a gamepad-accessible note-taking system. Notes are organized as "topics" (Trilium note groups). The PWA (`topics-editor`) exposes a TV/couch-friendly UI; the other directories provide the server-side glue.
 
+## Input Support
+
+All inputs must work for **gamepad**, **mouse**, and **mobile (touch)**. When adding or changing any UI interaction, ensure it remains usable from all three input methods — don't assume a single input device.
+
 ## Repository Layout
 
 ```
@@ -42,10 +46,11 @@ These JavaScript files are pasted directly into Trilium as [custom request handl
 | `getNoteContent.js` | `/custom/get-note` | Returns a single note's content + metadata |
 | `setNoteContent.js` | `/custom/set-note` | Overwrites a note's HTML content |
 | `createNote.js` | `/custom/create-note` | Creates a new note under the day note, applies `t_<topic>` labels |
+| `pebbleIndexEndpoint.js` | `/custom/index-create` | Creates a quicknote under the day note from multipart `transcription` + `recordedAt` fields; auth via `TRILIUM-SECRET` header (Pebble watch) or `secret` multipart field (PWA — see CORS gotcha). Used by the Pebble watch and the PWA quicknote input; `createNote.js` is unchanged |
 
-**Auth:** Every endpoint checks that the `secret` field in the POST body matches the `#secret` label on the handler note itself.
+**Auth:** Every endpoint checks that the `secret` field in the POST body matches the `#secret` label on the handler note itself (`pebbleIndexEndpoint.js` accepts either the `secret` field or a `TRILIUM-SECRET` header — the watch sends the header, the PWA sends the field).
 
-**CORS:** Each endpoint handles `OPTIONS` preflight requests by returning appropriate `Access-Control-Allow-*` headers so the PWA (potentially on a different origin) can call them.
+**CORS:** Each endpoint handles `OPTIONS` preflight requests by returning appropriate `Access-Control-Allow-*` headers so the PWA (potentially on a different origin) can call them. **Gotcha:** Trilium's own global CORS middleware actually answers preflights (204, fixed `Content-Type,Authorization` allow-list) *before* the handler script runs, so the script's `OPTIONS` block is dead code and **custom request headers can never pass a browser preflight** — which is why `index-create` takes the PWA's secret as a multipart body field (the watch isn't a browser, so its header works fine).
 
 **No build step** — these files are copied/pasted into Trilium directly.
 

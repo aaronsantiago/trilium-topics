@@ -34,6 +34,7 @@ src/
     NoteCard.svelte         # full note card (title + rendered content)
     NoteCollection.svelte   # card list w/ layouts (vertical, horizontal strip, todoStrip, responsive, stripResponsive)
     QuicknoteCard.svelte    # compact quicknote card (timestamp, snippet, todo checkbox, edit)
+    QuicknoteInput.svelte   # T9-capable text input (gamepad/touch) for capturing quicknotes
     QuicknoteEditPopup.svelte # staged topic/todo editor for selected quicknotes
     editor.svelte           # CKEditor5 wrapper component
     editorActions.js        # word-level cursor movement + insertion for CKEditor
@@ -65,14 +66,16 @@ State is stored in `topicsDbState` (idb-keyval). On startup and every 5 seconds,
 | `/custom/get-note` | POST | Fetch individual note content |
 | `/custom/set-note` | POST | Update an existing note |
 | `/custom/create-note` | POST | Create a new note |
+| `/custom/index-create` | POST | Create a quicknote from multipart `transcription` + `recordedAt` (pebble endpoint; also used by the home quicknote input) |
 
-Auth is via a `secret` field in the request body (configured in Settings).
+Auth is via a `secret` field in the request body (configured in Settings). `index-create` accepts the secret as a `secret` multipart field (PWA) or a `TRILIUM-SECRET` header (Pebble watch) — the PWA uses the field because Trilium's global CORS middleware answers browser preflights with a fixed `Content-Type,Authorization` allow-list, so a custom request header can never pass.
 
 ### Offline / Optimistic Updates
 
 - **`updatedNotes`**: queue of edited notes pending upload to Trilium
 - **`createdNotes`**: queue of newly created notes pending upload (use temp UUID until Trilium assigns a real ID)
 - Both queues are persisted to IndexedDB and flushed every 5 seconds via `setInterval`
+- Quicknotes typed into the home panel's `QuicknoteInput` also ride the `createdNotes` queue (optimistic card), but `checkCreatedNotes` uploads them to `/custom/index-create` (multipart `transcription` + `recordedAt` + `secret`) instead of `/custom/create-note`; since that endpoint returns no note ID, the editor's ID is resolved by content match against the refreshed quicknotes
 - `notes` is a `$derived` that merges `dbNotes` + `updatedNotes` + `createdNotes`, so the UI always reflects pending changes immediately
 - `refreshTopicsDb` uses an `isRefreshing` boolean mutex to prevent concurrent fetches
 - `refreshNotes` checks `dateModified` before fetching note content — only re-fetches notes that changed

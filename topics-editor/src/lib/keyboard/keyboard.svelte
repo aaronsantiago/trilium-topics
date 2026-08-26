@@ -5,7 +5,10 @@
   import { generateT9Db } from "$lib/t8-engine.js";
   import * as cheerio from "cheerio";
 
-  let { onInsertWord, onDeleteWordBackward, onMoveCursor } = $props();
+  // active=false makes the keyboard ignore all buttons (used by inputs that
+  // only want T9 while focused); onConfirmNoWord fires on confirm with no
+  // word selected and an empty buffer
+  let { active = true, onInsertWord, onDeleteWordBackward, onMoveCursor, onConfirmNoWord } = $props();
 
   let t9Db = $state({});
   let baseT9Db = $state({});
@@ -159,6 +162,7 @@
 
   $effect(() => {
     return addInputListener((e) => {
+      if (!active) return;
       if (!t9WordsOverride) {
         if (e == "l2") {
           currentString += "s";
@@ -207,12 +211,16 @@
       }
 
       if (e == "confirm") {
+        let wasEmpty = currentString.length === 0;
         let word = t9Words[selectedWordRing * 9 + selectedWordIndex];
         if (word) {
           currentString = "";
           onInsertWord(word);
         } else {
           currentString = "";
+          // nothing typed and no word selected — signal "confirm with an
+          // empty buffer" (e.g. the quicknote input submits its draft)
+          if (wasEmpty) onConfirmNoWord?.();
         }
         t9WordsOverride = null;
       }
@@ -221,6 +229,7 @@
 
   $effect(() => {
     return addInputReleasedListener((e) => {
+      if (!active) return;
       if (e === 'special' && t9WordsOverride) {
         let word = t9Words[selectedWordRing * 9 + selectedWordIndex];
         if (word) {
@@ -236,7 +245,7 @@
 <div
   class={"z-100 flex flex-col overflow-x-scroll w-full h-full" +
   " pointer-events-none absolute top-0 left-0 justify-end pb-[10vh]" +
-  "" + (currentString || t9WordsOverride ? "" : "hidden")
+  "" + (active && (currentString || t9WordsOverride) ? "" : "hidden")
   }
 >
   <div class="bg-base-300/90">{currentString}</div>

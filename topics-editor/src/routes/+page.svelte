@@ -6,6 +6,9 @@
     getNotes,
     getQuicknotes,
     queueNoteUpdate,
+    queueQuicknote,
+    getQuicknoteIds,
+    isPendingQuicknote,
   } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
   import { base } from "$app/paths";
@@ -13,6 +16,7 @@
   import { getNextFocus } from "@bbc/tv-lrud-spatial";
   import NoteCollection from "$lib/NoteCollection.svelte";
   import QuicknoteCard from "$lib/QuicknoteCard.svelte";
+  import QuicknoteInput from "$lib/QuicknoteInput.svelte";
   import QuicknoteEditPopup from "$lib/QuicknoteEditPopup.svelte";
   import dayjs from "dayjs";
   import { tick } from "svelte";
@@ -32,12 +36,13 @@
 
   let quicknotes = $derived.by(() => getQuicknotes());
 
+  let quicknoteInput = $state(null);
+  let quicknoteInputFocused = $state(false);
+
   let recentNotes = $derived.by(() => {
     const allNotes = getNotes();
     if (!allNotes) return [];
-    const quicknoteIds = new Set(
-      (topicsDbState.topicsDb?.quicknotes || []).map((n) => n.noteId),
-    );
+    const quicknoteIds = getQuicknoteIds();
     return Object.values(allNotes)
       .filter((n) => !quicknoteIds.has(n.noteId))
       .sort(
@@ -57,6 +62,9 @@
 
   function toggleEditing(noteId) {
     if (!noteId) return;
+    // topic/todo staging can't round-trip through index-create (it only
+    // creates the note) — staging works normally once the quicknote lands
+    if (isPendingQuicknote(noteId)) return;
     editingIds = editingIds.includes(noteId)
       ? editingIds.filter((id) => id !== noteId)
       : [...editingIds, noteId];
@@ -110,6 +118,13 @@
 
   $effect(() => {
     return addInputListener((e) => {
+      if (quicknoteInputFocused) {
+        // the QuicknoteInput's T9 keyboard owns confirm/delete/shoulder
+        // buttons while the field is focused; cancel exits input mode
+        // (blur keeps the draft)
+        if (e === "cancel") quicknoteInput?.blurInput();
+        return;
+      }
       if (directionMap[e]) {
         const next = getNextFocus(document.activeElement, directionMap[e]);
         if (next) {
@@ -189,27 +204,36 @@
     {/each}
   </div>
 
-  {#if quicknotes.length > 0}
-    <div
-      class="order-2 flex flex-col gap-2 p-4 md:p-0 md:pl-4 md:w-64 md:shrink-0 md:h-full"
-    >
-      <div class="text-xl font-semibold px-2 opacity-60">Quicknotes</div>
-      <div
-        class="overflow-x-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
-      >
-        <NoteCollection
-          notes={quicknotes}
-          onNoteClick={(note) =>
-            editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
-          layout="stripResponsive"
-          cardComponent={QuicknoteCard}
-          onCardEdit={(note) => toggleEditing(note.noteId)}
-          onCardMarkDone={(note) => markTodoDone(note.noteId)}
-          isSelected={(note) => editingIds.includes(note.noteId)}
-        />
-      </div>
+  <div
+    class="order-2 flex flex-col gap-2 p-4 md:p-0 md:pl-4 md:w-64 md:shrink-0 md:h-full"
+  >
+    <div class="text-xl font-semibold px-2 opacity-60">Quicknotes</div>
+    <div class:lrud-ignore={editorOpen} inert={editorOpen}>
+      <QuicknoteInput
+        bind:this={quicknoteInput}
+        placeholder="New quicknote"
+        onSubmit={queueQuicknote}
+        onFocusChange={(f) => (quicknoteInputFocused = f)}
+      />
     </div>
-  {/if}
+    <div
+      class="overflow-x-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
+    >
+      <NoteCollection
+        notes={quicknotes}
+        onNoteClick={(note) =>
+          editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
+        layout="stripResponsive"
+        cardComponent={QuicknoteCard}
+        onCardEdit={(note) => toggleEditing(note.noteId)}
+        onCardMarkDone={(note) => markTodoDone(note.noteId)}
+        isSelected={(note) => editingIds.includes(note.noteId)}
+      />
+      {#if quicknotes.length === 0}
+        <div class="text-xs opacity-40 px-2 py-1">No quicknotes</div>
+      {/if}
+    </div>
+  </div>
 
   {#if editingNotes.length > 0}
     <QuicknoteEditPopup
