@@ -12,6 +12,8 @@
     note?.dateCreated ? dayjs(note.dateCreated).format('MMM D, h:mm A') : ''
   );
 
+  let done = $derived(!!(note.isTodo && note.todoDone));
+
   function markDone(e) {
     e.stopPropagation();
     onmarkdone?.();
@@ -24,7 +26,7 @@
 </script>
 
 <div
-  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl {selected ? 'ring-2 ring-primary' : ''} {className}"
+  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl {selected ? 'ring-2 ring-primary' : ''} {done ? 'opacity-70' : ''} {className}"
   id={"note_" + note.noteId}
   tabindex="0"
   data-note-id={note.noteId}
@@ -34,13 +36,14 @@
     <div class="flex items-center justify-between gap-1 shrink-0">
       <div class="text-[11px] leading-none opacity-50">{timestamp}</div>
       <div class="flex items-center gap-1.5">
-        {#if note.isTodo && !note.todoDone}
+        {#if note.isTodo}
           <input
             type="checkbox"
             class="checkbox checkbox-xs"
             checked={!!note.todoDone}
+            disabled={done}
             onclick={markDone}
-            aria-label="Mark todo done"
+            aria-label={done ? 'Todo done' : 'Mark todo done'}
           />
         {/if}
         <button

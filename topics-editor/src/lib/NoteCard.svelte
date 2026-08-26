@@ -9,7 +9,7 @@
 </script>
 
 <div
-  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl {className}"
+  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl shrink-0 {className}"
   id={"note_" + note.noteId}
   tabindex="0"
   data-note-id={note.noteId}

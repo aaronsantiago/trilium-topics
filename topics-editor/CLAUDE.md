@@ -31,6 +31,10 @@ src/
   lib/
     appState.svelte.js      # selected topic/note state, breadcrumb generation
     topicsDb.svelte.js      # Trilium API sync, notes cache, pending queues
+    NoteCard.svelte         # full note card (title + rendered content)
+    NoteCollection.svelte   # card list w/ layouts (vertical, horizontal strip, todoStrip, responsive, stripResponsive)
+    QuicknoteCard.svelte    # compact quicknote card (timestamp, snippet, todo checkbox, edit)
+    QuicknoteEditPopup.svelte # staged topic/todo editor for selected quicknotes
     editor.svelte           # CKEditor5 wrapper component
     editorActions.js        # word-level cursor movement + insertion for CKEditor
     inputs.js               # gamepad polling (rAF loop) + input event bus
@@ -43,7 +47,7 @@ src/
     +layout.svelte          # FloatingButton + scrollContainer (ry-axis scroll)
     +page.svelte            # topic list (home)
     floatingButton.svelte   # flower-menu overlay for navigation (menu button)
-    topic/+page.svelte      # notes list for selected topic
+    topic/+page.svelte      # topic view: todos strip (opens first, dones last) + date-ordered timeline w/ inline quicknote scrollers
     note/+page.svelte       # note editor (CKEditor + Keyboard)
     create/+page.svelte     # new note form (title input + topic picker + Keyboard)
     settings/+page.svelte   # Trilium URL + secret config, reset DB
