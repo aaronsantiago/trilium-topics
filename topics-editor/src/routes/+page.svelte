@@ -4,7 +4,7 @@
     topicsDbState,
     initialize,
     getNotes,
-    getQuicknotes,
+    getQuicknoteSections,
     queueNoteUpdate,
     queueQuicknote,
     getQuicknoteIds,
@@ -34,7 +34,14 @@
       });
   });
 
-  let quicknotes = $derived.by(() => getQuicknotes());
+  let qnSections = $derived.by(() => getQuicknoteSections());
+  // flat view for input-handler lookups (includes done todos, now visible)
+  let allQuicknotes = $derived([
+    qnSections.unsorted,
+    qnSections.todos,
+    qnSections.sorted,
+    qnSections.done,
+  ].flat());
 
   let quicknoteInput = $state(null);
   let quicknoteInputFocused = $state(false);
@@ -80,16 +87,19 @@
     target?.focus();
   }
 
-  // the card unmounts as soon as it's done, so hand focus to a neighbour first —
-  // otherwise focus falls to <body> and D-pad navigation has nothing to move from
-  async function markTodoDone(noteId) {
+  // the card unmounts when it toggles (it moves between the Todos and Done
+  // sections), so hand focus to a spatial neighbour first — otherwise focus
+  // falls to <body> and D-pad navigation has nothing to move from
+  async function toggleTodoDone(noteId) {
+    const note = getNotes()[noteId];
+    if (!note?.isTodo) return;
     const card = document.getElementById("note_" + noteId);
     const next = card
       ? getNextFocus(card, "ArrowRight") ||
         getNextFocus(card, "ArrowDown") ||
         getNextFocus(card, "ArrowLeft")
       : null;
-    queueNoteUpdate(noteId, { todoDone: true });
+    queueNoteUpdate(noteId, { todoDone: !note.todoDone });
     await tick();
     if (next && document.contains(next)) next.focus();
   }
@@ -139,13 +149,13 @@
         const noteId = document.activeElement?.dataset?.noteId;
         if (noteId) {
           // while editing, confirm adds/removes quicknotes from the selection
-          if (editorOpen && quicknotes.find((n) => n.noteId === noteId)) {
+          if (editorOpen && allQuicknotes.find((n) => n.noteId === noteId)) {
             toggleEditing(noteId);
             return;
           }
           const note =
             recentNotes.find((n) => n.noteId === noteId) ||
-            quicknotes.find((n) => n.noteId === noteId);
+            allQuicknotes.find((n) => n.noteId === noteId);
           if (note) navigateToNote(note);
         } else {
           const topic = document.activeElement?.dataset?.topic;
@@ -154,16 +164,19 @@
         }
       } else if (e === "special") {
         const noteId = document.activeElement?.dataset?.noteId;
-        if (quicknotes.find((n) => n.noteId === noteId)) {
+        if (allQuicknotes.find((n) => n.noteId === noteId)) {
           toggleEditing(noteId);
         }
       } else if (e === "cancel") {
         if (editorOpen) editPanel?.commit();
       } else if (e === "r1") {
-        const noteId = document.activeElement?.dataset?.noteId;
-        const note = quicknotes.find((n) => n.noteId === noteId);
-        if (note?.isTodo && !note?.todoDone) {
-          markTodoDone(noteId);
+        // focus may sit on a sub-element (e.g. the checkbox) rather than the card
+        const noteId =
+          document.activeElement?.dataset?.noteId ??
+          document.activeElement?.closest?.("[data-note-id]")?.dataset?.noteId;
+        const note = allQuicknotes.find((n) => n.noteId === noteId);
+        if (note?.isTodo) {
+          toggleTodoDone(noteId);
         }
       }
     });
@@ -171,12 +184,22 @@
 
   let focusInitialized = false;
   $effect(() => {
-    if (
-      !focusInitialized &&
-      recentNotes.length === 0 &&
-      quicknotes.length === 0 &&
-      topics.length > 0
-    ) {
+    if (focusInitialized) return;
+    // don't steal focus from an active text input (e.g. the home
+    // quicknote input) when its submitted card lands in Unsorted
+    if (document.activeElement?.tagName === "INPUT") return;
+    // first card of the first non-empty section wins
+    const firstNote =
+      qnSections.unsorted[0] ??
+      qnSections.todos[0] ??
+      qnSections.sorted[0] ??
+      qnSections.done[0];
+    if (firstNote) {
+      focusInitialized = true;
+      document.getElementById("note_" + firstNote.noteId)?.focus();
+      return;
+    }
+    if (recentNotes.length === 0 && topics.length > 0) {
       focusInitialized = true;
       document.getElementById("topic_" + topics[0])?.focus();
     }
@@ -217,19 +240,34 @@
       />
     </div>
     <div
-      class="overflow-x-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
+      class="flex flex-col gap-1.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
     >
-      <NoteCollection
-        notes={quicknotes}
-        onNoteClick={(note) =>
-          editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
-        layout="stripResponsive"
-        cardComponent={QuicknoteCard}
-        onCardEdit={(note) => toggleEditing(note.noteId)}
-        onCardMarkDone={(note) => markTodoDone(note.noteId)}
-        isSelected={(note) => editingIds.includes(note.noteId)}
-      />
-      {#if quicknotes.length === 0}
+      {#each [
+        { label: "Unsorted", notes: qnSections.unsorted },
+        { label: "Todos", notes: qnSections.todos },
+        { label: "Sorted", notes: qnSections.sorted },
+        { label: "Done", notes: qnSections.done },
+      ] as section (section.label)}
+        {#if section.notes.length > 0}
+          <div class="text-sm font-semibold px-2 opacity-60">
+            {section.label}
+          </div>
+          <NoteCollection
+            notes={section.notes}
+            onNoteClick={(note) =>
+              editorOpen
+                ? toggleEditing(note.noteId)
+                : navigateToNote(note)}
+            layout="stripResponsive"
+            cardComponent={QuicknoteCard}
+            autoFocus={false}
+            onCardEdit={(note) => toggleEditing(note.noteId)}
+            onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
+            isSelected={(note) => editingIds.includes(note.noteId)}
+          />
+        {/if}
+      {/each}
+      {#if allQuicknotes.length === 0}
         <div class="text-xs opacity-40 px-2 py-1">No quicknotes</div>
       {/if}
     </div>

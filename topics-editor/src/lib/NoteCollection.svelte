@@ -1,7 +1,7 @@
 <script>
   import NoteCard from '$lib/NoteCard.svelte';
 
-  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, onCardMarkDone, isSelected, autoFocus = true } = $props();
+  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, onCardToggleDone, isSelected, autoFocus = true } = $props();
 
   const layoutClasses = {
     vertical: 'flex flex-col gap-4',
@@ -42,7 +42,7 @@
       selected={isSelected?.(note) ?? false}
       onclick={() => onNoteClick(note)}
       onedit={onCardEdit ? () => onCardEdit(note) : undefined}
-      onmarkdone={onCardMarkDone ? () => onCardMarkDone(note) : undefined}
+      ontoggledone={onCardToggleDone ? () => onCardToggleDone(note) : undefined}
     />
   {/each}
 </div>

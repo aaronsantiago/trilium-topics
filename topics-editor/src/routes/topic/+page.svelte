@@ -80,10 +80,13 @@
     target?.focus();
   }
 
-  // done todos stay in their lists (they just move to the "dones" group), so the
-  // keyed each keeps the focused DOM node in place and no focus hand-off is needed
-  function markTodoDone(noteId) {
-    queueNoteUpdate(noteId, { todoDone: true });
+  // done todos stay in their list (they just move between the opens/dones
+  // groups), so the keyed each keeps the focused DOM node in place and no
+  // focus hand-off is needed — in either direction (mark or unmark done)
+  function toggleTodoDone(noteId) {
+    const note = getNotes()[noteId];
+    if (!note?.isTodo) return;
+    queueNoteUpdate(noteId, { todoDone: !note.todoDone });
   }
 
   const directionMap = {
@@ -135,7 +138,7 @@
           ?? document.activeElement?.closest('[data-note-id]')?.dataset?.noteId;
         if (noteId) {
           const note = getNotes()[noteId];
-          if (note?.isTodo && !note?.todoDone) markTodoDone(noteId);
+          if (note?.isTodo) toggleTodoDone(noteId);
         }
       }
     });
@@ -177,7 +180,7 @@
           onNoteClick={(note) =>
             editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
           onCardEdit={(note) => toggleEditing(note.noteId)}
-          onCardMarkDone={(note) => markTodoDone(note.noteId)}
+          onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
           isSelected={(note) => editingIds.includes(note.noteId)}
         />
       </div>
@@ -205,7 +208,7 @@
             onNoteClick={(note) =>
               editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
             onCardEdit={(note) => toggleEditing(note.noteId)}
-            onCardMarkDone={(note) => markTodoDone(note.noteId)}
+            onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
             isSelected={(note) => editingIds.includes(note.noteId)}
           />
         </div>

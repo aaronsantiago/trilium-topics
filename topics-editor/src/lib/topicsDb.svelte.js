@@ -32,7 +32,13 @@ function getNotes() {
   return notes;
 }
 
-function getQuicknotes() {
+// home quicknotes panel sections, top to bottom:
+//   unsorted — non-todo quicknotes with no topic (existing order: pending newest first, then notePosition)
+//   todos    — all open todos, with or without a topic (same order as before)
+//   sorted   — non-todo quicknotes that have a topic, by date (newest first)
+//   done     — completed todos, by date (newest first)
+// every quicknote lands in exactly one section (todos take priority over topic state)
+function getQuicknoteSections() {
   let quicknoteMeta = topicsDbState.topicsDb?.quicknotes || [];
   let allNotes = notes;
   // pending quicknotes aren't in topicsDb.quicknotes yet (they ride the
@@ -45,12 +51,15 @@ function getQuicknotes() {
     .sort((a, b) => a.notePosition - b.notePosition)
     .map((meta) => allNotes[meta.noteId])
     .filter(Boolean);
-  // the todos-first sort is stable, so a fresh note lands at the top of
-  // the non-todo section
-  return [...pendingQuicknotes, ...serverQuicknotes]
-    .filter((note) => !(note.isTodo && note.todoDone))
-    .filter((note) => note.isTodo || !(note.topics?.length > 0))
-    .sort((a, b) => (a.isTodo ? 0 : 1) - (b.isTodo ? 0 : 1));
+  const byDateDesc = (a, b) =>
+    dayjs(b.dateCreated).valueOf() - dayjs(a.dateCreated).valueOf();
+  const all = [...pendingQuicknotes, ...serverQuicknotes];
+  return {
+    unsorted: all.filter((n) => !n.isTodo && !(n.topics?.length > 0)),
+    todos: all.filter((n) => n.isTodo && !n.todoDone),
+    sorted: all.filter((n) => !n.isTodo && n.topics?.length > 0).sort(byDateDesc),
+    done: all.filter((n) => n.isTodo && n.todoDone).sort(byDateDesc),
+  };
 }
 
 // ids of all quicknotes (server + pending) — keeps pending quicknotes out of
@@ -429,4 +438,4 @@ function resetDb() {
   pendingUploads.clear();
 }
 
-export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknotes, getQuicknoteIds, isPendingQuicknote, queueQuicknote, queueNoteUpdate, resetDb };
+export { topicsDbState, initialize, refreshTopicsDb, refreshNotes, getNotes, getQuicknoteSections, getQuicknoteIds, isPendingQuicknote, queueQuicknote, queueNoteUpdate, resetDb };

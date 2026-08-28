@@ -2,7 +2,7 @@
   import { topicsDbState } from '$lib/topicsDb.svelte.js';
   import dayjs from 'dayjs';
 
-  let { note, onclick, onedit, onmarkdone, selected = false, class: className = '' } = $props();
+  let { note, onclick, onedit, ontoggledone, selected = false, class: className = '' } = $props();
 
   let content = $derived(
     topicsDbState?.updatedNotes?.[note.noteId]?.content ?? note.content
@@ -14,9 +14,9 @@
 
   let done = $derived(!!(note.isTodo && note.todoDone));
 
-  function markDone(e) {
+  function toggleDone(e) {
     e.stopPropagation();
-    onmarkdone?.();
+    ontoggledone?.();
   }
 
   function handleEdit(e) {
@@ -41,9 +41,8 @@
             type="checkbox"
             class="checkbox checkbox-xs"
             checked={!!note.todoDone}
-            disabled={done}
-            onclick={markDone}
-            aria-label={done ? 'Todo done' : 'Mark todo done'}
+            onclick={toggleDone}
+            aria-label={done ? 'Unmark todo done' : 'Mark todo done'}
           />
         {/if}
         <button

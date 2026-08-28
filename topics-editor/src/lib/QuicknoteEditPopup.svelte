@@ -7,10 +7,18 @@
   // noteId -> { topics: string[], isTodo: boolean }, staged until commit()
   let staged = $state({});
 
+  // the panel's current setting per topic title: 'on' | 'off' — the last way the
+  // user toggled it. Notes that join the selection after a toggle are seeded
+  // with these applied, so new additions match what's already checked
+  let topicIntents = $state({});
+  // null until the user touches the todo toggle; then the value the panel has set
+  let todoIntent = $state(null);
+
   let topics = $derived.by(() => (topicsDbState.topicsDb?.children || []).map((t) => t.title));
   let selectedIds = $derived(notes.map((n) => n.noteId));
 
-  // seed staged entries for newly selected notes, drop deselected ones
+  // seed staged entries for newly selected notes (applying the panel's current
+  // settings), drop deselected ones
   $effect(() => {
     const incoming = notes.map((n) => ({
       noteId: n.noteId,
@@ -18,10 +26,22 @@
       isTodo: !!n.isTodo,
     }));
 
-    // untrack so reading/writing staged here doesn't retrigger this effect
+    // untrack so reading/writing staged or intents here doesn't retrigger this effect
     untrack(() => {
       for (const n of incoming) {
-        if (!staged[n.noteId]) staged[n.noteId] = { topics: n.topics, isTodo: n.isTodo };
+        if (staged[n.noteId]) continue;
+        let topics = n.topics;
+        for (const [topic, intent] of Object.entries(topicIntents)) {
+          if (intent === 'on') {
+            if (!topics.includes(topic)) topics = [...topics, topic];
+          } else {
+            topics = topics.filter((t) => t !== topic);
+          }
+        }
+        staged[n.noteId] = {
+          topics,
+          isTodo: todoIntent === null ? n.isTodo : todoIntent,
+        };
       }
       const keep = new Set(incoming.map((n) => n.noteId));
       for (const id of Object.keys(staged)) {
@@ -57,6 +77,7 @@
         s.topics = [...s.topics, topic];
       }
     }
+    topicIntents[topic] = removing ? 'off' : 'on';
   }
 
   function toggleTodo() {
@@ -64,6 +85,7 @@
     for (const id of selectedIds) {
       if (staged[id]) staged[id].isTodo = value;
     }
+    todoIntent = value;
   }
 
   const topicKey = (list) => JSON.stringify([...(list ?? [])].sort());
