@@ -32,7 +32,7 @@ src/
     appState.svelte.js      # selected topic/note state, breadcrumb generation
     topicsDb.svelte.js      # Trilium API sync, notes cache, pending queues
     NoteCard.svelte         # full note card (title + rendered content)
-    NoteCollection.svelte   # card list w/ layouts (vertical, horizontal strip, todoStrip, responsive, stripResponsive)
+    NoteCollection.svelte   # card list w/ layouts (vertical, horizontal strip, todoStrip, responsive, masonryH — Isotope masonryHorizontal in portrait)
     QuicknoteCard.svelte    # compact quicknote card (timestamp, snippet, todo checkbox, edit)
     QuicknoteInput.svelte   # T9-capable text input (gamepad/touch) for capturing quicknotes
     QuicknoteEditPopup.svelte # staged topic/todo editor for selected quicknotes

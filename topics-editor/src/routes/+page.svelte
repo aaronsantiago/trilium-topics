@@ -297,14 +297,16 @@
           <div class="text-sm font-semibold px-2 opacity-60 shrink-0">
             {section.label}
           </div>
-          <div class="overflow-x-auto shrink-0">
+          <!-- 252px = fixed-height masonry box (lane grid geometry in
+               NoteCollection.svelte); plain flow in landscape -->
+          <div class="overflow-x-auto shrink-0 max-md:h-[252px]">
             <NoteCollection
               notes={section.notes}
               onNoteClick={(note) =>
                 editorOpen
                   ? toggleEditing(note.noteId)
                   : navigateToNote(note)}
-              layout="stripResponsive"
+              layout="masonryH"
               cardComponent={QuicknoteCard}
               autoFocus={false}
               onCardEdit={(note) => toggleEditing(note.noteId)}

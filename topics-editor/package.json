@@ -30,6 +30,8 @@
 		"cheerio": "^1.2.0",
 		"ckeditor5": "^47.5.0",
 		"dayjs": "^1.11.19",
-		"idb-keyval": "^6.2.2"
+		"idb-keyval": "^6.2.2",
+		"isotope-layout": "^3.0.6",
+		"isotope-masonry-horizontal": "^2.0.1"
 	}
 }
