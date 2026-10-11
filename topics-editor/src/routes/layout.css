@@ -15,6 +15,83 @@
 	--ck-content-font-family: 'Helvetica';
 }
 
+/*
+	flexoki theme — overrides the daisyUI theme's color slots with the original
+	flexoki palette (bg #ffead2, fg #b23800, black #4c3b2d, blue #006d87,
+	green #2e7d32, yellow #835800, magenta #8f4bbc).
+	flexoki only defines one background, so the base ramp is derived around it:
+	100 = cards (warm off-white), 200 = page (flexoki's exact #ffead2),
+	300 = insets/keyboard overlay (one step darker).
+	This plain (non-layered) block wins over daisyUI's base-layer theme vars.
+*/
+:root {
+	--color-base-100: #fffaf0;
+	--color-base-200: #ffead2;
+	--color-base-300: #f3dec3;
+	--color-base-content: #4c3b2d;
+	--color-primary: #b23800;
+	--color-primary-content: #fffaf0;
+	--color-secondary: #006d87;
+	--color-secondary-content: #fffaf0;
+	--color-accent: #8f4bbc;
+	--color-accent-content: #fffaf0;
+	--color-neutral: #4c3b2d;
+	--color-neutral-content: #fffaf0;
+	--color-info: #006d87;
+	--color-info-content: #fffaf0;
+	--color-success: #2e7d32;
+	--color-success-content: #fffaf0;
+	--color-warning: #835800;
+	--color-warning-content: #fffaf0;
+	--color-error: #b23800;
+	--color-error-content: #fffaf0;
+}
+
+/*
+	flexoki for the CKEditor chrome (it doesn't read daisyUI vars): editable
+	surface = base-100, raised bars = base-200, hover = base-300, text =
+	base-content, borders = base-content @ 25%, focus/active = primary.
+*/
+.editor-container .ck.ck-editor {
+	--ck-color-text: #4c3b2d;
+	--ck-color-background: #fffaf0;
+	--ck-color-border: rgba(76, 59, 45, 0.25);
+	--ck-color-header-background: #ffead2;
+	--ck-color-header-border: rgba(76, 59, 45, 0.25);
+	--ck-color-engine-bar-background: #ffead2;
+	--ck-color-engine-bar-border: rgba(76, 59, 45, 0.25);
+	--ck-color-toolbar-background: #ffead2;
+	--ck-color-toolbar-border: rgba(76, 59, 45, 0.25);
+	--ck-color-focus-border: #b23800;
+	--ck-color-focus-shadow: rgba(178, 56, 0, 0.35);
+	--ck-color-focus-transparent-border: transparent;
+	--ck-color-text-selection-background: rgba(178, 56, 0, 0.3);
+	--ck-color-panel-background: #fffaf0;
+	--ck-color-panel-border: rgba(76, 59, 45, 0.25);
+	--ck-color-dropdown-background: #fffaf0;
+	--ck-color-dropdown-border: rgba(76, 59, 45, 0.25);
+	--ck-color-dropdown-hover-background: #f3dec3;
+	--ck-color-dropdown-hover-border: rgba(76, 59, 45, 0.25);
+	--ck-color-dropdown-with-hover-background: #f3dec3;
+	--ck-color-button-background: transparent;
+	--ck-color-button-hover-background: #f3dec3;
+	--ck-color-button-on-background: #b23800;
+	--ck-color-button-on-hover-background: #b23800;
+	--ck-color-button-on-focus-background: #b23800;
+	--ck-color-button-action-background: #b23800;
+	--ck-color-button-action-hover-background: #b23800;
+	--ck-color-list-background: #fffaf0;
+	--ck-color-list-button-hover-background: #f3dec3;
+	--ck-color-list-button-on-background: #b23800;
+	--ck-color-list-button-on-hover-background: #b23800;
+	--ck-color-switcher-off-background: rgba(76, 59, 45, 0.25);
+	--ck-color-switcher-on-background: #b23800;
+	--ck-color-switcher-knob-off-background: #fffaf0;
+	--ck-color-switcher-knob-on-background: #fffaf0;
+	--ck-color-table-selection-background: rgba(178, 56, 0, 0.3);
+	--ck-color-table-selected-cell-background: rgba(178, 56, 0, 0.3);
+}
+
 .main-container {
 	font-family: var(--ck-content-font-family);
 	width: fit-content;
@@ -31,3 +108,4 @@
 	max-width: 0;
 	min-width: 0;
 }
+
