@@ -46,6 +46,27 @@
   let quicknoteInput = $state(null);
   let quicknoteInputFocused = $state(false);
 
+  // true while the quicknotes panel has the user's attention — i.e. focus
+  // is inside it, or the user last pressed/tapped inside it (pressing its
+  // empty space blurs to <body>, which fires no focusin). Drives the
+  // mobile quicknotes mode
+  let quicknotesPanel = $state(null);
+  let quicknotesFocused = $state(false);
+
+  $effect(() => {
+    const setFocusedFrom = (el) => {
+      quicknotesFocused = !!quicknotesPanel?.contains(el);
+    };
+    const onFocusIn = (e) => setFocusedFrom(e.target);
+    const onPointerDown = (e) => setFocusedFrom(e.target);
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  });
+
   let recentNotes = $derived.by(() => {
     const allNotes = getNotes();
     if (!allNotes) return [];
@@ -61,6 +82,8 @@
 
   let editingIds = $state([]);
   let editorOpen = $derived(editingIds.length > 0);
+  let qnExpanded = $state(false);
+  let panelExpanded = $derived(editorOpen || qnExpanded);
   let editingNotes = $derived.by(() => {
     const allNotes = getNotes();
     return editingIds.map((id) => allNotes[id]).filter(Boolean);
@@ -75,6 +98,15 @@
     editingIds = editingIds.includes(noteId)
       ? editingIds.filter((id) => id !== noteId)
       : [...editingIds, noteId];
+  }
+
+  // the handle lives inside the panel, so release focus and drop the
+  // focus-driven state after toggling — otherwise quicknotes mode would
+  // mask the manual expanded/collapsed state
+  function togglePanel(e) {
+    qnExpanded = !qnExpanded;
+    e.currentTarget.blur();
+    quicknotesFocused = false;
   }
 
   async function closeQuicknoteEditor() {
@@ -208,7 +240,8 @@
 
 <div class="flex flex-col md:flex-row w-full h-full bg-base-200">
   <div
-    class="order-3 md:order-1 grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
+    class="order-2 md:order-1 grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
+    class:max-md:hidden={quicknotesFocused}
     class:lrud-ignore={editorOpen}
     inert={editorOpen}
   >
@@ -228,10 +261,22 @@
   </div>
 
   <div
-    class="order-2 flex flex-col gap-2 p-4 md:p-0 md:pl-4 md:w-64 md:shrink-0 md:h-full"
+    bind:this={quicknotesPanel}
+    class="order-3 flex flex-col gap-2 p-4 md:p-0 md:pl-4 md:w-64 shrink-0 md:h-full transition-[height] duration-300 ease-out {quicknotesFocused ? 'h-3/4' : panelExpanded ? 'h-1/2' : 'h-1/4'}"
   >
-    <div class="text-xl font-semibold px-2 opacity-60">Quicknotes</div>
-    <div class:lrud-ignore={editorOpen} inert={editorOpen}>
+    <button
+      type="button"
+      tabindex="0"
+      class="md:hidden shrink-0 flex items-center justify-center py-1.5 cursor-pointer outline-none"
+      class:lrud-ignore={editorOpen}
+      inert={editorOpen}
+      aria-label={qnExpanded ? "Collapse quicknotes" : "Expand quicknotes"}
+      onclick={togglePanel}
+    >
+      <div class="w-10 h-1 rounded-full bg-base-300"></div>
+    </button>
+    <div class="text-xl font-semibold px-2 opacity-60 shrink-0">Quicknotes</div>
+    <div class="shrink-0" class:lrud-ignore={editorOpen} inert={editorOpen}>
       <QuicknoteInput
         bind:this={quicknoteInput}
         placeholder="New quicknote"
@@ -240,7 +285,7 @@
       />
     </div>
     <div
-      class="flex flex-col gap-1.5 overflow-x-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
+      class="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
     >
       {#each [
         { label: "Unsorted", notes: qnSections.unsorted },
@@ -249,26 +294,28 @@
         { label: "Done", notes: qnSections.done },
       ] as section (section.label)}
         {#if section.notes.length > 0}
-          <div class="text-sm font-semibold px-2 opacity-60">
+          <div class="text-sm font-semibold px-2 opacity-60 shrink-0">
             {section.label}
           </div>
-          <NoteCollection
-            notes={section.notes}
-            onNoteClick={(note) =>
-              editorOpen
-                ? toggleEditing(note.noteId)
-                : navigateToNote(note)}
-            layout="stripResponsive"
-            cardComponent={QuicknoteCard}
-            autoFocus={false}
-            onCardEdit={(note) => toggleEditing(note.noteId)}
-            onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
-            isSelected={(note) => editingIds.includes(note.noteId)}
-          />
+          <div class="overflow-x-auto shrink-0">
+            <NoteCollection
+              notes={section.notes}
+              onNoteClick={(note) =>
+                editorOpen
+                  ? toggleEditing(note.noteId)
+                  : navigateToNote(note)}
+              layout="stripResponsive"
+              cardComponent={QuicknoteCard}
+              autoFocus={false}
+              onCardEdit={(note) => toggleEditing(note.noteId)}
+              onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
+              isSelected={(note) => editingIds.includes(note.noteId)}
+            />
+          </div>
         {/if}
       {/each}
       {#if allQuicknotes.length === 0}
-        <div class="text-xs opacity-40 px-2 py-1">No quicknotes</div>
+        <div class="text-xs opacity-40 px-2 py-1 shrink-0">No quicknotes</div>
       {/if}
     </div>
   </div>

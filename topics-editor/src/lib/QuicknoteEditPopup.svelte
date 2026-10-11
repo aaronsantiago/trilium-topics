@@ -114,7 +114,7 @@
 
 <div
   id="quicknoteEditPanel"
-  class="fixed inset-x-0 top-0 z-40 max-h-[45vh] overflow-y-auto bg-base-100 shadow-xl border-b border-base-300 p-3 flex flex-col gap-2
+  class="fixed inset-x-0 top-0 z-40 h-1/4 overflow-y-auto bg-base-100 shadow-xl border-b border-base-300 p-3 flex flex-col gap-2
          md:static md:inset-auto md:z-auto md:max-h-none md:h-full md:w-72 md:shrink-0 md:order-3 md:border-b-0 md:border-l"
 >
   <div class="text-lg font-semibold">
