@@ -58,7 +58,7 @@
         </button>
       </div>
     </div>
-    <div class="overflow-hidden line-clamp-3 text-xs leading-snug [&_img]:hidden [&_figure]:hidden">
+    <div class="overflow-hidden text-xs leading-snug [&_img]:hidden [&_figure]:hidden">
       {#if content?.trim()}
         {@html content}
       {:else}

@@ -280,9 +280,10 @@
           <div class="text-sm font-semibold px-2 opacity-60 shrink-0">
             {section.label}
           </div>
-          <!-- 252px = fixed-height masonry box (lane grid geometry in
+          <!-- the masonry box sizes itself to its tallest card (min 252px;
+               full-content cards; lane grid geometry in
                NoteCollection.svelte); plain flow in landscape -->
-          <div class="overflow-x-auto shrink-0 max-md:h-[252px]">
+          <div class="overflow-x-auto shrink-0">
             <NoteCollection
               notes={section.notes}
               onNoteClick={(note) => toggleEditing(note.noteId)}
