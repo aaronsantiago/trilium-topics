@@ -82,8 +82,6 @@
 
   let editingIds = $state([]);
   let editorOpen = $derived(editingIds.length > 0);
-  let qnExpanded = $state(false);
-  let panelExpanded = $derived(editorOpen || qnExpanded);
   let editingNotes = $derived.by(() => {
     const allNotes = getNotes();
     return editingIds.map((id) => allNotes[id]).filter(Boolean);
@@ -98,15 +96,6 @@
     editingIds = editingIds.includes(noteId)
       ? editingIds.filter((id) => id !== noteId)
       : [...editingIds, noteId];
-  }
-
-  // the handle lives inside the panel, so release focus and drop the
-  // focus-driven state after toggling — otherwise quicknotes mode would
-  // mask the manual expanded/collapsed state
-  function togglePanel(e) {
-    qnExpanded = !qnExpanded;
-    e.currentTarget.blur();
-    quicknotesFocused = false;
   }
 
   async function closeQuicknoteEditor() {
@@ -180,14 +169,13 @@
         }
         const noteId = document.activeElement?.dataset?.noteId;
         if (noteId) {
-          // while editing, confirm adds/removes quicknotes from the selection
-          if (editorOpen && allQuicknotes.find((n) => n.noteId === noteId)) {
+          // confirm on a quicknote stages it in the topic/todo edit menu
+          // (same as a tap); recent notes open in the editor
+          if (allQuicknotes.find((n) => n.noteId === noteId)) {
             toggleEditing(noteId);
             return;
           }
-          const note =
-            recentNotes.find((n) => n.noteId === noteId) ||
-            allQuicknotes.find((n) => n.noteId === noteId);
+          const note = recentNotes.find((n) => n.noteId === noteId);
           if (note) navigateToNote(note);
         } else {
           const topic = document.activeElement?.dataset?.topic;
@@ -195,10 +183,10 @@
           else document.activeElement?.click();
         }
       } else if (e === "special") {
+        // the gamepad's pencil: open the quicknote in the editor
         const noteId = document.activeElement?.dataset?.noteId;
-        if (allQuicknotes.find((n) => n.noteId === noteId)) {
-          toggleEditing(noteId);
-        }
+        const note = allQuicknotes.find((n) => n.noteId === noteId);
+        if (note) navigateToNote(note);
       } else if (e === "cancel") {
         if (editorOpen) editPanel?.commit();
       } else if (e === "r1") {
@@ -240,7 +228,7 @@
 
 <div class="flex flex-col md:flex-row w-full h-full bg-base-200">
   <div
-    class="order-2 md:order-1 grid grid-rows-2 grid-flow-col auto-cols-max gap-4 overflow-x-auto p-4 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
+    class="order-2 md:order-1 grid grid-rows-1 grid-flow-col auto-cols-max gap-2 overflow-x-auto p-2 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
     class:max-md:hidden={quicknotesFocused}
     class:lrud-ignore={editorOpen}
     inert={editorOpen}
@@ -253,8 +241,8 @@
         data-topic={topic}
         onclick={() => navigateToTopic(topic)}
       >
-        <div class="card-body">
-          <div class="card-title text-2xl">{topic}</div>
+        <div class="card-body max-md:px-3 max-md:py-2">
+          <div class="card-title text-2xl max-md:text-lg">{topic}</div>
         </div>
       </div>
     {/each}
@@ -262,27 +250,22 @@
 
   <div
     bind:this={quicknotesPanel}
-    class="order-3 flex flex-col gap-2 p-4 md:p-0 md:pl-4 md:w-64 shrink-0 md:h-full transition-[height] duration-300 ease-out {quicknotesFocused ? 'h-3/4' : panelExpanded ? 'h-1/2' : 'h-1/4'}"
+    class="order-3 flex flex-col gap-2 p-4 pt-3 md:p-0 md:pl-4 md:w-64 shrink-0 md:h-full transition-[height] duration-300 ease-out {quicknotesFocused ? 'h-3/4' : editorOpen ? 'h-1/2' : 'h-1/4'}"
   >
-    <button
-      type="button"
-      tabindex="0"
-      class="md:hidden shrink-0 flex items-center justify-center py-1.5 cursor-pointer outline-none"
+    <div
+      class="flex flex-col max-md:flex-row max-md:items-center gap-2 shrink-0"
       class:lrud-ignore={editorOpen}
       inert={editorOpen}
-      aria-label={qnExpanded ? "Collapse quicknotes" : "Expand quicknotes"}
-      onclick={togglePanel}
     >
-      <div class="w-10 h-1 rounded-full bg-base-300"></div>
-    </button>
-    <div class="text-xl font-semibold px-2 opacity-60 shrink-0">Quicknotes</div>
-    <div class="shrink-0" class:lrud-ignore={editorOpen} inert={editorOpen}>
-      <QuicknoteInput
-        bind:this={quicknoteInput}
-        placeholder="New quicknote"
-        onSubmit={queueQuicknote}
-        onFocusChange={(f) => (quicknoteInputFocused = f)}
-      />
+      <div class="text-xl font-semibold px-2 opacity-60 shrink-0">Quicknotes</div>
+      <div class="shrink-0 max-md:flex-1 max-md:min-w-0">
+        <QuicknoteInput
+          bind:this={quicknoteInput}
+          placeholder="New quicknote"
+          onSubmit={queueQuicknote}
+          onFocusChange={(f) => (quicknoteInputFocused = f)}
+        />
+      </div>
     </div>
     <div
       class="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto md:overflow-x-hidden md:overflow-y-scroll md:flex-1 md:min-h-0"
@@ -302,14 +285,11 @@
           <div class="overflow-x-auto shrink-0 max-md:h-[252px]">
             <NoteCollection
               notes={section.notes}
-              onNoteClick={(note) =>
-                editorOpen
-                  ? toggleEditing(note.noteId)
-                  : navigateToNote(note)}
+              onNoteClick={(note) => toggleEditing(note.noteId)}
               layout="masonryH"
               cardComponent={QuicknoteCard}
               autoFocus={false}
-              onCardEdit={(note) => toggleEditing(note.noteId)}
+              onCardEdit={(note) => navigateToNote(note)}
               onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
               isSelected={(note) => editingIds.includes(note.noteId)}
             />

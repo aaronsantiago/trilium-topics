@@ -19,6 +19,10 @@
   // lane count = floor(contentArea / 6): 42 without the bar, 39 with it.
   const MASONRY_ROW_HEIGHT = 6;
   const MASONRY_GUTTER = 0;
+  // constant empty band reserved below each card so the vertical gap between
+  // stacked cards has a guaranteed minimum (a tighter lane leftover would let
+  // a neighbour's background paint over the 2px selection ring)
+  const MASONRY_ROW_GAP = 4;
 
   const layoutClasses = {
     vertical: 'flex flex-col gap-4',
@@ -91,12 +95,18 @@
       // height lands within 1px of a grid multiple — which can assign a slot
       // shorter than the card, overflowing the box vertically. Measuring the
       // exact height (getBoundingClientRect, not offsetHeight) and rounding
-      // the *item* up keeps span*6 >= card height exact; the leftover 0–6px
-      // under each card is the natural masonry gap.
+      // the *item* up keeps span*6 >= card height exact. The gap is folded
+      // INTO the snap (ceil((h+GAP)/6)*6, not ceil(h/6)*6+GAP — Isotope's
+      // span is derived from the item height, so a band added after the snap
+      // wouldn't change the lanes) — this leaves a constant MASONRY_ROW_GAP
+      // band under the card, so the visual gap between stacked cards is
+      // 4–10px, always enough for the 2px selection ring to clear a
+      // neighbour's background.
       for (const w of Array.from(containerEl.children)) {
         const h = (w.firstElementChild ?? w).getBoundingClientRect().height;
         w.style.height =
-          Math.ceil(h / MASONRY_ROW_HEIGHT) * MASONRY_ROW_HEIGHT + 'px';
+          Math.ceil((h + MASONRY_ROW_GAP) / MASONRY_ROW_HEIGHT) *
+          MASONRY_ROW_HEIGHT + 'px';
       }
       iso = new Isotope(containerEl, {
         layoutMode: 'masonryHorizontal',

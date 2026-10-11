@@ -113,8 +113,9 @@
         const noteId = document.activeElement?.dataset?.noteId;
         if (noteId) {
           const note = getNotes()[noteId];
-          // while editing, confirm adds/removes quicknotes from the selection
-          if (editorOpen && note?.quicknote) {
+          // confirm on a quicknote stages it in the topic/todo edit menu
+          // (same as a tap); other notes open in the editor
+          if (note?.quicknote) {
             toggleEditing(noteId);
             return;
           }
@@ -123,12 +124,13 @@
           document.activeElement?.click();
         }
       } else if (e === 'special') {
+        // the gamepad's pencil: open the quicknote in the editor.
         // focus may sit on a sub-element (e.g. the checkbox) rather than the card
         const noteId = document.activeElement?.dataset?.noteId
           ?? document.activeElement?.closest('[data-note-id]')?.dataset?.noteId;
         if (noteId) {
           const note = getNotes()[noteId];
-          if (note?.quicknote) toggleEditing(noteId);
+          if (note?.quicknote) navigateToNote(note);
         }
       } else if (e === 'cancel') {
         if (editorOpen) editPanel?.commit();
@@ -177,9 +179,8 @@
           layout="todoStrip"
           cardComponent={QuicknoteCard}
           autoFocus={false}
-          onNoteClick={(note) =>
-            editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
-          onCardEdit={(note) => toggleEditing(note.noteId)}
+          onNoteClick={(note) => toggleEditing(note.noteId)}
+          onCardEdit={(note) => navigateToNote(note)}
           onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
           isSelected={(note) => editingIds.includes(note.noteId)}
         />
@@ -205,9 +206,8 @@
             layout="horizontal"
             cardComponent={QuicknoteCard}
             autoFocus={false}
-            onNoteClick={(note) =>
-              editorOpen ? toggleEditing(note.noteId) : navigateToNote(note)}
-            onCardEdit={(note) => toggleEditing(note.noteId)}
+            onNoteClick={(note) => toggleEditing(note.noteId)}
+            onCardEdit={(note) => navigateToNote(note)}
             onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
             isSelected={(note) => editingIds.includes(note.noteId)}
           />

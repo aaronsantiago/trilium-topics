@@ -49,7 +49,7 @@
           type="button"
           class="opacity-40 hover:opacity-100 shrink-0"
           onclick={handleEdit}
-          aria-label="Edit quicknote"
+          aria-label="Open quicknote in editor"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
             <path d="M12 20h9"/>
