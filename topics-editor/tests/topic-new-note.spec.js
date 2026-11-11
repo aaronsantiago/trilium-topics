@@ -7,7 +7,7 @@ async function openTopic(page, topic) {
 }
 
 const newNoteButton = (page) => page.getByRole("button", { name: "New note" });
-const topicOption = (page, topic) => page.locator(`[role="button"][data-topic="${topic}"]`);
+const topicOption = (page, topic) => page.locator(`[data-topic-option="${topic}"]`);
 
 test("New note from a topic preselects it and returns to the topic", async ({ page }, testInfo) => {
   const trilium = await setupApp(page);
@@ -92,7 +92,7 @@ test("Create from the flower menu starts empty, even after visiting a topic", as
   await expect(page).toHaveURL(/\/create\/$/);
 
   await expect(topicOption(page, "work")).toBeVisible();
-  await expect(page.locator('[role="button"][data-topic][aria-pressed="true"]')).toHaveCount(0);
+  await expect(page.locator('[data-topic-option][aria-pressed="true"]')).toHaveCount(0);
 
   // cancel without a seed goes home
   await page.getByRole("button", { name: "Cancel" }).click();

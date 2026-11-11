@@ -40,10 +40,10 @@ async function openCreatePage(page, testInfo) {
 async function createViaUi(page, testInfo, title, topics, screenshot) {
   await openCreatePage(page, testInfo);
   await page.getByPlaceholder("Note title").fill(title);
-  for (const t of topics) await press(page.locator(`[data-topic="${t}"]`), testInfo);
-  for (const t of topics) await expect(page.locator(`[data-topic="${t}"]`)).toHaveAttribute("aria-pressed", "true");
+  for (const t of topics) await press(page.locator(`[data-topic-option="${t}"]`), testInfo);
+  for (const t of topics) await expect(page.locator(`[data-topic-option="${t}"]`)).toHaveAttribute("aria-pressed", "true");
   if (screenshot) await page.screenshot({ path: testInfo.outputPath(screenshot) });
-  await press(page.getByRole("button", { name: "Create" }), testInfo);
+  await press(page.getByRole("button", { name: "Create", exact: true }), testInfo);
   await expect(page).toHaveURL(/\/note\/$/);
   const editable = page.locator(".ck-editor__editable");
   await expect(editable).toBeVisible();
@@ -175,7 +175,7 @@ test("topic picker with many topics stays usable on a phone", async ({ page }, t
   await page.getByPlaceholder("Note title").fill("Many topics");
   const picks = ["work", "home", "reading", ...extra.slice(0, 5), extra[19]];
   for (const t of picks) {
-    const item = page.locator(`[data-topic="${t}"]`);
+    const item = page.locator(`[data-topic-option="${t}"]`);
     await item.scrollIntoViewIfNeeded();
     await press(item, testInfo);
     await expect(item).toHaveAttribute("aria-pressed", "true");
@@ -184,7 +184,7 @@ test("topic picker with many topics stays usable on a phone", async ({ page }, t
   // no horizontal page scroll; Create still reachable
   const overflowX = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflowX).toBeLessThanOrEqual(0);
-  const create = page.getByRole("button", { name: "Create" });
+  const create = page.getByRole("button", { name: "Create", exact: true });
   await create.scrollIntoViewIfNeeded();
   await expect(create).toBeInViewport();
   await press(create, testInfo);
