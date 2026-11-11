@@ -65,7 +65,7 @@ src/
     floatingButton.svelte   # tap-to-open flower menu: Home / Create / Settings
     topic/+page.svelte      # topic view: todos strip (opens first, dones last) + date-ordered timeline w/ inline quicknote scrollers; bottom-left "New note" button
     note/+page.svelte       # note editor (CKEditor); "✎ Topics" opens NoteTopicsPopup, disabled until content is loaded / quicknote uploaded
-    create/+page.svelte     # new note form (title input + TopicPicker, Cancel/Create)
+    create/+page.svelte     # new note form: one card — title, Cancel/Create right under it (stays above the phone keyboard), then a selected-topics summary + TopicPicker in its own scroll area; pb-24 keeps it clear of the FAB
     settings/+page.svelte   # Trilium URL + secret config, reset DB
 ```
 
