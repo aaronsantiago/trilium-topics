@@ -2,13 +2,8 @@
   import { appState } from "$lib/appState.svelte.js";
   import { topicsDbState, getNotes, queueNoteUpdate } from "$lib/topicsDb.svelte.js";
   import Editor from "$lib/editor.svelte";
-  import Keyboard from "$lib/keyboard/keyboard.svelte";
-  import { addInputListener } from "$lib/inputs.js";
-  import * as editorActions from "$lib/editorActions.js";
-  import { goto } from "$app/navigation";
   import dayjs from "dayjs";
 
-  let editor = $state(null);
   let humanReadableDate = $derived.by(() => {
     if (!note?.dateCreated) return "";
     return dayjs(note.dateCreated).format("MMMM D, YYYY");
@@ -17,10 +12,6 @@
     if (!note?.dateCreated) return "";
     return dayjs(note.dateCreated).format("h:mm A");
   });
-
-  function setEditor(e) {
-    editor = e;
-  }
 
   let note = $derived.by(() => {
     let notes = getNotes();
@@ -36,40 +27,10 @@
     }
     queueNoteUpdate(note.noteId, { content });
   }
-
-  function onInsertWord(word) {
-    if (editor) {
-      editorActions.insertWord(editor, word);
-    }
-  }
-
-  function onDeleteWordBackward() {
-    if (editor) {
-      editorActions.deleteWordBackward(editor);
-    }
-  }
-
-  function onMoveCursor(direction) {
-    if (!editor) return;
-    if (direction == "left") editorActions.moveCursorLeft(editor);
-    if (direction == "right") editorActions.moveCursorRight(editor);
-    if (direction == "up") editorActions.moveCursorUp(editor);
-    if (direction == "down") editorActions.moveCursorDown(editor);
-  }
-
-  $effect(() => {
-    return addInputListener((e) => {
-      if (e == "cancel") {
-        goto(appState.selectedTopic ? `/topic` : `/`);
-      }
-    });
-  });
 </script>
 
-<Keyboard {onInsertWord} {onDeleteWordBackward} {onMoveCursor} />
-
 <div class="flex flex-col md:flex-row h-screen overflow-hidden items-stretch mb-48">
-  <Editor {editHandler} initialData={note?.content} editorCallback={setEditor} />
+  <Editor {editHandler} initialData={note?.content} />
   <div class="prose m-2 order-first md:order-none w-full md:w-auto">
     <h1 class="mb-[-1em]">{note?.title}</h1>
     <h2 class="lowercase">

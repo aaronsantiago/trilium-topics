@@ -1,10 +1,10 @@
 # trilium-topics
 
-A monorepo of tools that turn [Trilium Notes](https://github.com/zadam/trilium) into a gamepad-accessible note-taking system. Notes are organized as "topics" (Trilium note groups). The PWA (`topics-editor`) exposes a TV/couch-friendly UI; the other directories provide the server-side glue.
+A monorepo of tools that turn [Trilium Notes](https://github.com/zadam/trilium) into a phone-friendly note-taking system. Notes are organized as "topics" (Trilium note groups). The PWA (`topics-editor`) is the UI; the other directories provide the server-side glue.
 
 ## Input Support
 
-All inputs must work for **gamepad**, **mouse**, and **mobile (touch)**. When adding or changing any UI interaction, ensure it remains usable from all three input methods — don't assume a single input device.
+All inputs must work for **mouse** and **mobile (touch)**; mobile is the primary target. When adding or changing any UI interaction, ensure it stays usable from both — don't assume a single input device. Gamepad/controller support (including the T9 keyboard) was deliberately removed on 2026-11-10; don't add it back.
 
 ## Repository Layout
 
@@ -12,8 +12,7 @@ All inputs must work for **gamepad**, **mouse**, and **mobile (touch)**. When ad
 trilium-topics/
 ├── topics-editor/          # SvelteKit PWA — the main application
 ├── sync-endpoints/         # Trilium custom API endpoint scripts (run inside Trilium)
-├── base/                   # Trilium automation scripts (topic management)
-└── dictionary-construction/ # CLI utilities for building T9 word dictionaries
+└── base/                   # Trilium automation scripts (topic management)
 ```
 
 ---
@@ -69,29 +68,6 @@ These are not executed externally — they live inside Trilium notes and are tri
 
 ---
 
-## `dictionary-construction/` — Dictionary Utilities
-
-Node.js CLI scripts for building and maintaining the word prediction dictionary used by the T9 keyboard in `topics-editor`.
-
-| File | Purpose |
-|---|---|
-| `extract-words.js` | Extracts words from source files and writes frequency-sorted list |
-| `combine-dicts.js` | Merges multiple word lists into one |
-| `compare-dicts.js` | Diffs two dictionaries |
-| `compare-to-master.js` | Compares a candidate dict against the master |
-| `lowercase-dedup.js` | Lowercases and deduplicates a word list |
-
-**Source word lists:**
-- `google-10000-english-usa.txt` — Google's 10 k most common English words
-- `master-dictionary.txt` / `master-dictionary-lowercase.txt` — curated merged list
-- `ngram_words_*.txt` — n-gram word lists from the iWeb corpus (tracked via Git LFS)
-
-**Output:** `master-dictionary-lowercase.txt` is copied to `topics-editor/static/` and fetched at runtime by the PWA to seed the T9 trie.
-
-**Git LFS:** Large `ngram_words_*.txt` files are stored via Git LFS (see `.gitattributes`).
-
----
-
 ## How the Pieces Connect
 
 ```
@@ -99,7 +75,6 @@ Trilium Notes (server)
   └── sync-endpoints/ (custom API handlers inside Trilium)
         ↑↓ HTTP POST (secret-authenticated)
   topics-editor/ (PWA in the browser)
-        ├── reads master-dictionary-lowercase.txt at startup (static asset)
         └── base/ scripts manage the topic structure inside Trilium
 ```
 

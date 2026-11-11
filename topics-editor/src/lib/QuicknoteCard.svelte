@@ -26,7 +26,7 @@
 </script>
 
 <div
-  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl {selected ? 'ring-2 ring-primary' : ''} {done ? 'opacity-70' : ''} {className}"
+  class="overflow-hidden card bg-base-100 shadow-sm group outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl {selected ? 'ring-2 ring-primary' : ''} {done ? 'opacity-70' : ''} {className}"
   id={"note_" + note.noteId}
   tabindex="0"
   data-note-id={note.noteId}

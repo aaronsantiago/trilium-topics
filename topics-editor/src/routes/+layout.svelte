@@ -4,13 +4,10 @@
 	import { pwaInfo } from 'virtual:pwa-info';
 	import { generateBreadcrumbs, initializeAppState } from '$lib/appState.svelte.js';
 	import { base } from '$app/paths';
-	import { initInputs, addAxisListener, addInputListener } from '$lib/inputs.js';
-	import { goto } from '$app/navigation';
 	import FloatingButton from './floatingButton.svelte';
 
 	onMount(async () => {
 
-	  initInputs();
 		initializeAppState();
 
 	  if (pwaInfo) {
@@ -35,16 +32,6 @@
   let webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '' );
   let { children } = $props();
 
-  $effect(() => {
-    return addAxisListener((e) => {
-      if (e.axis == "ry" && Math.abs(e.value) > 0.1) {
-        document.getElementById("scrollContainer").scrollBy({
-          top: 5 * e.value * e.value * Math.sign(e.value),
-          // behavior: 'smooth'
-        });
-      }
-    });
-  })
 </script>
 
 <svelte:head>

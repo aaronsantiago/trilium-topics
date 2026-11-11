@@ -5,7 +5,7 @@
   // registers the 'masonryHorizontal' layout mode (not included in isotope-layout itself)
   import 'isotope-masonry-horizontal';
 
-  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, onCardToggleDone, isSelected, autoFocus = true } = $props();
+  let { notes, onNoteClick, layout = 'vertical', cardComponent = NoteCard, onCardEdit, onCardToggleDone, isSelected } = $props();
 
   // masonryH geometry: masonryHorizontal lays items on a lane grid of
   // MASONRY_ROW_HEIGHT px — a card spans ceil(height / rowHeight) lanes and
@@ -53,17 +53,6 @@
     responsive: 'md:flex-shrink-0 md:w-128',
     masonryH: 'flex-shrink-0 w-40 md:w-full'
   };
-
-  let focusInitialized = false;
-  $effect(() => {
-    if (autoFocus && notes.length > 0 && !focusInitialized) {
-      // don't steal focus from an active text input (e.g. the home
-      // quicknote input) when its first submitted card appears
-      if (document.activeElement?.tagName === 'INPUT') return;
-      focusInitialized = true;
-      document.getElementById('note_' + notes[0].noteId)?.focus();
-    }
-  });
 
   // masonryHorizontal (portrait only): one Isotope instance per section,
   // re-created whenever the card set or orientation changes. Outlayer's

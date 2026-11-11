@@ -2,9 +2,6 @@
   import {appState} from '$lib/appState.svelte.js';
   import {getNotes, queueNoteUpdate} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
-  import { addInputListener } from "$lib/inputs.js";
-  import { getNextFocus } from '@bbc/tv-lrud-spatial';
-  import { tick } from "svelte";
   import dayjs from 'dayjs';
   import NoteCollection from '$lib/NoteCollection.svelte';
   import NoteCard from '$lib/NoteCard.svelte';
@@ -63,7 +60,6 @@
     const allNotes = getNotes();
     return editingIds.map((id) => allNotes[id]).filter(Boolean);
   });
-  let editPanel = $state(null);
 
   function toggleEditing(noteId) {
     if (!noteId) return;
@@ -72,104 +68,21 @@
       : [...editingIds, noteId];
   }
 
-  async function closeQuicknoteEditor() {
+  function closeQuicknoteEditor() {
     editingIds = [];
-    // the panel (which held focus) unmounts — put focus back on the page
-    await tick();
-    const target = document.querySelector("[data-note-id]");
-    target?.focus();
   }
 
-  // done todos stay in their list (they just move between the opens/dones
-  // groups), so the keyed each keeps the focused DOM node in place and no
-  // focus hand-off is needed — in either direction (mark or unmark done)
   function toggleTodoDone(noteId) {
     const note = getNotes()[noteId];
     if (!note?.isTodo) return;
     queueNoteUpdate(noteId, { todoDone: !note.todoDone });
   }
-
-  const directionMap = {
-    up: 'ArrowUp', down: 'ArrowDown',
-    left: 'ArrowLeft', right: 'ArrowRight'
-  };
-
-  const focusIsInEditPanel = () =>
-    !!document.activeElement?.closest('#quicknoteEditPanel');
-
-  $effect(() => {
-    return addInputListener((e) => {
-      if (directionMap[e]) {
-        const next = getNextFocus(document.activeElement, directionMap[e]);
-        if (next) {
-          next.focus();
-          next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      } else if (e === 'confirm') {
-        if (focusIsInEditPanel()) {
-          document.activeElement?.click();
-          return;
-        }
-        const noteId = document.activeElement?.dataset?.noteId;
-        if (noteId) {
-          const note = getNotes()[noteId];
-          // confirm on a quicknote stages it in the topic/todo edit menu
-          // (same as a tap); other notes open in the editor
-          if (note?.quicknote) {
-            toggleEditing(noteId);
-            return;
-          }
-          if (note) navigateToNote(note);
-        } else {
-          document.activeElement?.click();
-        }
-      } else if (e === 'special') {
-        // the gamepad's pencil: open the quicknote in the editor.
-        // focus may sit on a sub-element (e.g. the checkbox) rather than the card
-        const noteId = document.activeElement?.dataset?.noteId
-          ?? document.activeElement?.closest('[data-note-id]')?.dataset?.noteId;
-        if (noteId) {
-          const note = getNotes()[noteId];
-          if (note?.quicknote) navigateToNote(note);
-        }
-      } else if (e === 'cancel') {
-        if (editorOpen) editPanel?.commit();
-        else goto(`/`);
-      } else if (e === 'r1') {
-        const noteId = document.activeElement?.dataset?.noteId
-          ?? document.activeElement?.closest('[data-note-id]')?.dataset?.noteId;
-        if (noteId) {
-          const note = getNotes()[noteId];
-          if (note?.isTodo) toggleTodoDone(noteId);
-        }
-      }
-    });
-  });
-
-  let focusInitialized = false;
-  $effect(() => {
-    if (focusInitialized) return;
-    const first =
-      (todos.length > 0 ? todos[0] : null) ??
-      (timelineItems.length > 0 && timelineItems[0].type === 'note'
-        ? timelineItems[0].note
-        : null) ??
-      (timelineItems.length > 0 && timelineItems[0].type === 'quicknotes'
-        ? timelineItems[0].notes[0]
-        : null);
-    if (first) {
-      focusInitialized = true;
-      document.getElementById('note_' + first.noteId)?.focus();
-    }
-  });
-
 </script>
 
 <div class="flex flex-col md:flex-row w-full h-full bg-base-200">
   {#if todos.length > 0}
     <div
       class="order-1 flex flex-col gap-2 p-4 shrink-0 md:p-0 md:pl-4 md:w-72 md:h-full"
-      class:lrud-ignore={editorOpen}
       inert={editorOpen}
     >
       <div class="text-xl font-semibold px-2 opacity-60">Todos</div>
@@ -178,7 +91,6 @@
           notes={todos}
           layout="todoStrip"
           cardComponent={QuicknoteCard}
-          autoFocus={false}
           onNoteClick={(note) => toggleEditing(note.noteId)}
           onCardEdit={(note) => navigateToNote(note)}
           onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
@@ -190,7 +102,6 @@
 
   <div
     class="order-2 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:h-full"
-    class:lrud-ignore={editorOpen}
     inert={editorOpen}
   >
     <div class="text-xl font-semibold px-2 opacity-60 shrink-0">{appState.selectedTopic}</div>
@@ -205,7 +116,6 @@
             notes={item.notes}
             layout="horizontal"
             cardComponent={QuicknoteCard}
-            autoFocus={false}
             onNoteClick={(note) => toggleEditing(note.noteId)}
             onCardEdit={(note) => navigateToNote(note)}
             onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
@@ -221,7 +131,6 @@
 
   {#if editingNotes.length > 0}
     <QuicknoteEditPopup
-      bind:this={editPanel}
       notes={editingNotes}
       onclose={closeQuicknoteEditor}
     />

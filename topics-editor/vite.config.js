@@ -14,9 +14,7 @@ export default defineConfig({
     SvelteKitPWA({
       registerType: "autoUpdate",
       trailingSlash: "always",
-      includeAssets: [
-          "*.txt"
-      ],
+      includeAssets: ["robots.txt"],
       devOptions: {
         enabled: true,
         /* other options */

@@ -12,14 +12,11 @@
   } from "$lib/topicsDb.svelte.js";
   import { appState } from "$lib/appState.svelte.js";
   import { base } from "$app/paths";
-  import { addInputListener } from "$lib/inputs.js";
-  import { getNextFocus } from "@bbc/tv-lrud-spatial";
   import NoteCollection from "$lib/NoteCollection.svelte";
   import QuicknoteCard from "$lib/QuicknoteCard.svelte";
   import QuicknoteInput from "$lib/QuicknoteInput.svelte";
   import QuicknoteEditPopup from "$lib/QuicknoteEditPopup.svelte";
   import dayjs from "dayjs";
-  import { tick } from "svelte";
 
   initialize();
 
@@ -35,16 +32,13 @@
   });
 
   let qnSections = $derived.by(() => getQuicknoteSections());
-  // flat view for input-handler lookups (includes done todos, now visible)
+  // flat view of every visible quicknote (for the empty-state check)
   let allQuicknotes = $derived([
     qnSections.unsorted,
     qnSections.todos,
     qnSections.sorted,
     qnSections.done,
   ].flat());
-
-  let quicknoteInput = $state(null);
-  let quicknoteInputFocused = $state(false);
 
   // true while the quicknotes panel has the user's attention — i.e. focus
   // is inside it, or the user last pressed/tapped inside it (pressing its
@@ -86,7 +80,6 @@
     const allNotes = getNotes();
     return editingIds.map((id) => allNotes[id]).filter(Boolean);
   });
-  let editPanel = $state(null);
 
   function toggleEditing(noteId) {
     if (!noteId) return;
@@ -98,31 +91,14 @@
       : [...editingIds, noteId];
   }
 
-  async function closeQuicknoteEditor() {
+  function closeQuicknoteEditor() {
     editingIds = [];
-    // the panel (which held focus) unmounts — put focus back on the page
-    await tick();
-    const target =
-      document.querySelector("[data-note-id]") ??
-      document.querySelector("[data-topic]");
-    target?.focus();
   }
 
-  // the card unmounts when it toggles (it moves between the Todos and Done
-  // sections), so hand focus to a spatial neighbour first — otherwise focus
-  // falls to <body> and D-pad navigation has nothing to move from
-  async function toggleTodoDone(noteId) {
+  function toggleTodoDone(noteId) {
     const note = getNotes()[noteId];
     if (!note?.isTodo) return;
-    const card = document.getElementById("note_" + noteId);
-    const next = card
-      ? getNextFocus(card, "ArrowRight") ||
-        getNextFocus(card, "ArrowDown") ||
-        getNextFocus(card, "ArrowLeft")
-      : null;
     queueNoteUpdate(noteId, { todoDone: !note.todoDone });
-    await tick();
-    if (next && document.contains(next)) next.focus();
   }
 
   function navigateToTopic(topic) {
@@ -136,106 +112,17 @@
     appState.selectedNoteId = note.noteId;
     goto(base + `/note`);
   }
-
-  const directionMap = {
-    up: "ArrowUp",
-    down: "ArrowDown",
-    left: "ArrowLeft",
-    right: "ArrowRight",
-  };
-
-  const focusIsInEditPanel = () =>
-    !!document.activeElement?.closest("#quicknoteEditPanel");
-
-  $effect(() => {
-    return addInputListener((e) => {
-      if (quicknoteInputFocused) {
-        // the QuicknoteInput's T9 keyboard owns confirm/delete/shoulder
-        // buttons while the field is focused; cancel exits input mode
-        // (blur keeps the draft)
-        if (e === "cancel") quicknoteInput?.blurInput();
-        return;
-      }
-      if (directionMap[e]) {
-        const next = getNextFocus(document.activeElement, directionMap[e]);
-        if (next) {
-          next.focus();
-          next.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-      } else if (e === "confirm") {
-        if (focusIsInEditPanel()) {
-          document.activeElement?.click();
-          return;
-        }
-        const noteId = document.activeElement?.dataset?.noteId;
-        if (noteId) {
-          // confirm on a quicknote stages it in the topic/todo edit menu
-          // (same as a tap); recent notes open in the editor
-          if (allQuicknotes.find((n) => n.noteId === noteId)) {
-            toggleEditing(noteId);
-            return;
-          }
-          const note = recentNotes.find((n) => n.noteId === noteId);
-          if (note) navigateToNote(note);
-        } else {
-          const topic = document.activeElement?.dataset?.topic;
-          if (topic) navigateToTopic(topic);
-          else document.activeElement?.click();
-        }
-      } else if (e === "special") {
-        // the gamepad's pencil: open the quicknote in the editor
-        const noteId = document.activeElement?.dataset?.noteId;
-        const note = allQuicknotes.find((n) => n.noteId === noteId);
-        if (note) navigateToNote(note);
-      } else if (e === "cancel") {
-        if (editorOpen) editPanel?.commit();
-      } else if (e === "r1") {
-        // focus may sit on a sub-element (e.g. the checkbox) rather than the card
-        const noteId =
-          document.activeElement?.dataset?.noteId ??
-          document.activeElement?.closest?.("[data-note-id]")?.dataset?.noteId;
-        const note = allQuicknotes.find((n) => n.noteId === noteId);
-        if (note?.isTodo) {
-          toggleTodoDone(noteId);
-        }
-      }
-    });
-  });
-
-  let focusInitialized = false;
-  $effect(() => {
-    if (focusInitialized) return;
-    // don't steal focus from an active text input (e.g. the home
-    // quicknote input) when its submitted card lands in Unsorted
-    if (document.activeElement?.tagName === "INPUT") return;
-    // first card of the first non-empty section wins
-    const firstNote =
-      qnSections.unsorted[0] ??
-      qnSections.todos[0] ??
-      qnSections.sorted[0] ??
-      qnSections.done[0];
-    if (firstNote) {
-      focusInitialized = true;
-      document.getElementById("note_" + firstNote.noteId)?.focus();
-      return;
-    }
-    if (recentNotes.length === 0 && topics.length > 0) {
-      focusInitialized = true;
-      document.getElementById("topic_" + topics[0])?.focus();
-    }
-  });
 </script>
 
 <div class="flex flex-col md:flex-row w-full h-full bg-base-200">
   <div
     class="order-2 md:order-1 grid grid-rows-1 grid-flow-col auto-cols-max gap-2 overflow-x-auto p-2 md:flex md:flex-col md:gap-4 md:h-full md:overflow-x-hidden md:overflow-y-scroll md:grow md:shrink-0 md:p-0"
     class:max-md:hidden={quicknotesFocused}
-    class:lrud-ignore={editorOpen}
     inert={editorOpen}
   >
     {#each topics as topic}
       <div
-        class="card bg-base-100 shadow-sm group outline-none transition-transform focus:scale-[1.02] focus:shadow-xl"
+        class="card bg-base-100 shadow-sm group outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl"
         id={"topic_" + topic}
         tabindex="0"
         data-topic={topic}
@@ -254,16 +141,13 @@
   >
     <div
       class="flex flex-col max-md:flex-row max-md:items-center gap-2 shrink-0"
-      class:lrud-ignore={editorOpen}
       inert={editorOpen}
     >
       <div class="text-xl font-semibold px-2 opacity-60 shrink-0">Quicknotes</div>
       <div class="shrink-0 max-md:flex-1 max-md:min-w-0">
         <QuicknoteInput
-          bind:this={quicknoteInput}
           placeholder="New quicknote"
           onSubmit={queueQuicknote}
-          onFocusChange={(f) => (quicknoteInputFocused = f)}
         />
       </div>
     </div>
@@ -289,7 +173,6 @@
               onNoteClick={(note) => toggleEditing(note.noteId)}
               layout="masonryH"
               cardComponent={QuicknoteCard}
-              autoFocus={false}
               onCardEdit={(note) => navigateToNote(note)}
               onCardToggleDone={(note) => toggleTodoDone(note.noteId)}
               isSelected={(note) => editingIds.includes(note.noteId)}
@@ -305,7 +188,6 @@
 
   {#if editingNotes.length > 0}
     <QuicknoteEditPopup
-      bind:this={editPanel}
       notes={editingNotes}
       onclose={closeQuicknoteEditor}
     />
@@ -313,7 +195,6 @@
 
   <div
     class="order-1 md:order-4 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-none md:overflow-y-hidden md:overflow-x-scroll md:h-full"
-    class:lrud-ignore={editorOpen}
     inert={editorOpen}
   >
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>

@@ -122,10 +122,9 @@
   </div>
 
   <div
-    class="outline-none transition-transform focus:scale-[1.02] focus:shadow-xl rounded px-2 py-1 cursor-pointer"
+    class="outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl rounded px-2 py-1 cursor-pointer"
     tabindex="0"
     role="button"
-    data-action="todo-toggle"
     onclick={toggleTodo}
   >
     Todo
@@ -138,10 +137,9 @@
     {#each topics as topic}
       {@const selection = topicState(topic)}
       <div
-        class="outline-none transition-transform focus:scale-[1.02] focus:shadow-xl rounded px-2 py-1 cursor-pointer"
+        class="outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl rounded px-2 py-1 cursor-pointer"
         tabindex="0"
         role="button"
-        data-edit-topic={topic}
         onclick={() => toggleTopic(topic)}
       >
         {topic}
@@ -152,7 +150,7 @@
   </div>
 
   <button
-    class="btn btn-primary mt-2 outline-none transition-transform focus:scale-[1.02]"
+    class="btn btn-primary mt-2 outline-none transition-transform focus-visible:scale-[1.02]"
     tabindex="0"
     onclick={commit}
   >Done</button>

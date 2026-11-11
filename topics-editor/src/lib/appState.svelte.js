@@ -6,8 +6,6 @@ let appState = $state({
   selectedTopic: '',
   selectedNoteName: '',
   selectedNoteId: '',
-  buttonLayout: 'standard',
-  modalOpen: false
 });
 
 // initialize appState
@@ -16,7 +14,6 @@ let appState = $state({
   appState.selectedTopic = await get('selectedTopic') || '';
   appState.selectedNoteName = await get('selectedNoteName') || '';
   appState.selectedNoteId = await get('selectedNoteId') || '';
-  appState.buttonLayout = await get('buttonLayout') || 'standard';
 })();
 
 function initializeAppState() {
@@ -30,10 +27,6 @@ function initializeAppState() {
 
   $effect(() => {
     if (appState.selectedNoteId) set('selectedNoteId', appState.selectedNoteId);
-  });
-
-  $effect(() => {
-    set('buttonLayout', appState.buttonLayout);
   });
 }
 
