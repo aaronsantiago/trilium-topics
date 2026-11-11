@@ -55,6 +55,8 @@ src/
     QuicknoteCard.svelte    # compact quicknote card (timestamp, full content, todo checkbox, edit)
     QuicknoteInput.svelte   # plain text input for quicknotes; Enter submits and keeps focus (phone keyboard stays up)
     QuicknoteEditPopup.svelte # staged topic/todo editor for selected quicknotes
+    TopicPicker.svelte      # shared tap/click topic list (✓ / – per row); used by create, quicknote popup, note topics popup
+    NoteTopicsPopup.svelte  # note page's topic editor; each tap queues the change (set-note), last-topic removal asks first
     editor.svelte           # CKEditor5 wrapper component
   routes/
     +layout.js              # ssr=false, prerender=true, trailingSlash=always
@@ -62,7 +64,7 @@ src/
     +page.svelte            # topic list (home)
     floatingButton.svelte   # tap-to-open flower menu: Home / Create / Settings
     topic/+page.svelte      # topic view: todos strip (opens first, dones last) + date-ordered timeline w/ inline quicknote scrollers
-    note/+page.svelte       # note editor (CKEditor)
+    note/+page.svelte       # note editor (CKEditor); "✎ Topics" opens NoteTopicsPopup, disabled until content is loaded / quicknote uploaded
     create/+page.svelte     # new note form (title input + tap-to-toggle topic picker)
     settings/+page.svelte   # Trilium URL + secret config, reset DB
 ```
