@@ -2,6 +2,7 @@
   import {appState} from '$lib/appState.svelte.js';
   import {getNotes, queueNoteUpdate} from '$lib/topicsDb.svelte.js';
   import { goto } from "$app/navigation";
+  import { base } from "$app/paths";
   import dayjs from 'dayjs';
   import NoteCollection from '$lib/NoteCollection.svelte';
   import NoteCard from '$lib/NoteCard.svelte';
@@ -54,6 +55,12 @@
     goto(`/note`);
   }
 
+  function createNoteInTopic() {
+    appState.createSeedTopics = [appState.selectedTopic];
+    appState.createReturnTo = '/topic';
+    goto(base + '/create');
+  }
+
   let editingIds = $state([]);
   let editorOpen = $derived(editingIds.length > 0);
   let editingNotes = $derived.by(() => {
@@ -101,7 +108,7 @@
   {/if}
 
   <div
-    class="order-2 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:h-full"
+    class="order-2 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 pb-24 rounded-lg overflow-y-auto md:h-full"
     inert={editorOpen}
   >
     <div class="text-xl font-semibold px-2 opacity-60 shrink-0">{appState.selectedTopic}</div>
@@ -128,6 +135,20 @@
       <div class="opacity-40 p-4 shrink-0">No notes in this topic</div>
     {/if}
   </div>
+
+  <!-- bottom-left, opposite the flower-menu FAB (bottom-right), so it's in
+       thumb reach without colliding with the flower's arc -->
+  {#if !editorOpen}
+    <button
+      class="btn btn-primary btn-lg rounded-full shadow-lg fixed bottom-4 left-4 z-40"
+      onclick={createNoteInTopic}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="22" height="22" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      New note
+    </button>
+  {/if}
 
   {#if editingNotes.length > 0}
     <QuicknoteEditPopup

@@ -7,7 +7,12 @@
   import TopicPicker from "$lib/TopicPicker.svelte";
 
   let title = $state("");
-  let selectedTopics = $state([]);
+  // seeded by the topic page's "New note" button; read once and cleared so
+  // the next /create from elsewhere (flower menu) starts empty
+  const returnTo = appState.createReturnTo;
+  let selectedTopics = $state([...appState.createSeedTopics]);
+  appState.createSeedTopics = [];
+  appState.createReturnTo = '';
 
 
   async function createNote() {
@@ -19,11 +24,24 @@
       content: "",
       topics: selectedTopics
     };
+    if (returnTo) {
+      // opened from a topic: go back to it (or to the first chosen topic if
+      // the user deselected it) and show the new note in its timeline
+      if (!selectedTopics.includes(appState.selectedTopic)) {
+        appState.selectedTopic = selectedTopics[0];
+      }
+      goto(base + returnTo);
+      return;
+    }
     appState.selectedTopic = selectedTopics[0];
     appState.selectedNoteName = title;
     appState.selectedNoteId = tempNoteId;
     goto(base + `/note`);
 
+  }
+
+  function cancel() {
+    goto(base + (returnTo || '/'));
   }
 
   function toggleTopic(topic) {
@@ -47,12 +65,18 @@
       <span class="badge badge-primary mr-1">{topic}</span>
     {/each}
   </div>
-  <button
-    class="btn mt-2 btn-soft btn-primary outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl"
-    tabindex="0"
-    disabled={title.trim() === "" || selectedTopics.length == 0}
-    onclick={createNote}
-  >Create</button>
+  <div class="flex gap-2 mt-2">
+    <button
+      class="btn btn-ghost outline-none"
+      onclick={cancel}
+    >Cancel</button>
+    <button
+      class="btn flex-1 btn-soft btn-primary outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl"
+      tabindex="0"
+      disabled={title.trim() === "" || selectedTopics.length == 0}
+      onclick={createNote}
+    >Create</button>
+  </div>
   <TopicPicker
     stateOf={(topic) => (selectedTopics.includes(topic) ? "all" : "none")}
     ontoggle={toggleTopic}
