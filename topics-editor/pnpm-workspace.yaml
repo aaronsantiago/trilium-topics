@@ -1,2 +1,5 @@
-onlyBuiltDependencies:
-  - esbuild
+allowBuilds:
+  esbuild: true
+  sharp: false
+publicHoistPattern:
+  - workbox-window

@@ -21,7 +21,26 @@ pnpm build        # production build → ./build/
 pnpm preview      # preview production build
 pnpm deploy       # deploy ./build/ to GitHub Pages via gh-pages (includes dotfiles via -t)
 pnpm generate-pwa-assets  # regenerate PWA icons from static/icon.jpeg
+pnpm test:e2e         # Playwright, mobile + desktop projects (see Testing)
+pnpm test:e2e:mobile  # Playwright, phone emulation only
 ```
+
+## Testing
+
+Playwright (`@playwright/test`, pinned to 1.56.1 to match the Chromium already in `~/.cache/ms-playwright`; if it's missing, `pnpm exec playwright install chromium`). Config: `playwright.config.js`.
+
+- **Server:** Playwright starts `vite dev` on `PW_PORT` (default **5180**) and reuses one already running there. Use a different `PW_PORT` per worktree/agent.
+- **Projects:** `mobile` = `devices['Pixel 7']` (412×839, touch, `isMobile`); `desktop` = Desktop Chrome.
+- **Service worker is blocked** (`serviceWorkers: 'block'`): the dev build registers the PWA worker, whose fetches would bypass request mocking.
+- **Fake Trilium** — `tests/helpers/trilium.js`, `mockTrilium(page, fixtures)`: routes `http://trilium.test/custom/*` and answers `get-topic-notes`, `get-note`, `set-note`, `create-note`, `index-create` in the same shapes as `sync-endpoints/*.js`. It's stateful (edits/creates show up on the next 5 s sync; topics with no notes disappear, like `base/topic_collection.js`). The returned object exposes `notes` (Map), `requests`, `requestsTo('set-note')` for asserting what the app sent, and `failNext('create-note')` to inject a 500.
+- **Fixtures** — `tests/fixtures/notes.js`, `defaultFixtures()`: topics `work`/`home`/`reading`, a note in all three topics (`noteMulti`), a 60-paragraph note (`noteLong`, for scroll bugs), and quicknotes (unsorted, open todo, done todo). Copy and modify it per test rather than editing shared data.
+- **App helpers** — `tests/helpers/app.js`:
+  - `setupApp(page, { fixtures?, path? })` installs the fake, writes `triliumUrl`/`triliumSecret` straight into IndexedDB (`keyval-store`), reloads, and waits for the first sync. (Filling the Settings page doesn't persist: the idb write `$effect`s only run once home calls `initialize()`.)
+  - `touchScroll(page, x, y, dy)` does a real finger-drag scroll via CDP `Input.synthesizeScrollGesture`; positive `dy` scrolls content down. Use it for touch-scroll bugs; `page.mouse.wheel` doesn't exercise touch scrolling.
+  - `scrollChain(page, selector)` lists `scrollTop`/`overflowY` of every scrollable ancestor, which helps find nested scroll-container bugs.
+- **Writing a spec:** add `tests/<feature>.spec.js`; start with `const trilium = await setupApp(page)`; drive the UI with `locator.tap()` on mobile (or `click()`, which works in both projects); assert on the DOM *and* on `trilium.requestsTo(...)` for sync behaviour. Remember the queues flush every 5 s, so use `expect.poll(() => trilium.requestsTo('set-note').length).toBeGreaterThan(0)` rather than fixed sleeps.
+- **Look at it:** save screenshots with `await page.screenshot({ path: testInfo.outputPath('name.png') })`; they land in `test-results/<test>-<project>/`. Read them to check layout. Failures also keep a screenshot and `trace.zip` (`pnpm exec playwright show-trace <zip>`).
+- **One-off look at a page:** write a throwaway spec (or `-g` an existing one) and run `pnpm exec playwright test tests/x.spec.js --project=mobile`. Delete throwaway specs before committing.
 
 ## Project Structure
 

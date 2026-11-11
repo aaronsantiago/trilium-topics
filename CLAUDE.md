@@ -115,8 +115,13 @@ Trilium Notes (server)
 
 - The active feature branch is `claude/claude-md-mm3yqxjud5csni96-kySAh`.
 - There is no CI/CD pipeline — deployment is manual via `pnpm deploy` from `topics-editor/`.
-- No test suite exists; validate changes manually in a browser with a gamepad or by reviewing component logic.
 
-## Testing Policy
+## Testing
 
-**Claude must never run tests or attempt to validate/verify changes.** All testing and validation is done manually by the user. Do not run `pnpm dev`, `pnpm build`, or any other command for the purpose of testing or verifying that changes work.
+`topics-editor/` has a Playwright suite that runs the PWA in a headless Chromium against a **fake Trilium** (request routing, no real server). How to run and extend it: [`topics-editor/CLAUDE.md` → Testing](topics-editor/CLAUDE.md#testing).
+
+- **Verify UI changes yourself** with the `mobile` project (Pixel 7 viewport + touch): `cd topics-editor && pnpm test:e2e:mobile`. Mobile is the primary target; also run `desktop` (`pnpm test:e2e`) before finishing.
+- **Add or extend a spec** for every bug fix or feature (`topics-editor/tests/*.spec.js`), and **look at the screenshots** it saves under `test-results/` — passing assertions don't prove the layout looks right.
+- **Trilium is always mocked.** Never point tests or scripts at a real Trilium URL or use the real secret, and never run `pnpm deploy`.
+- **Parallel worktrees:** give each one its own port, e.g. `PW_PORT=5181 pnpm test:e2e`, and run `pnpm install` in the worktree first.
+- The user still does final checks on a real phone; say what you verified and what you couldn't (e.g. iOS Safari, real on-screen keyboard).
