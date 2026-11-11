@@ -6,9 +6,12 @@ import { TRILIUM_URL } from "./helpers/trilium.js";
 // other two users of the picker: the quicknote edit popup and the create page.
 
 /** tap on touch projects, click elsewhere */
-function press(locator, testInfo) {
-  return testInfo.project.use.hasTouch ? locator.tap() : locator.click();
+function press(locator, testInfo, options) {
+  return testInfo.project.use.hasTouch ? locator.tap(options) : locator.click(options);
 }
+
+/** a locked row is aria-disabled, which Playwright won't act on unless forced */
+const pressLocked = (locator, testInfo) => press(locator, testInfo, { force: true });
 
 const sorted = (list) => [...(list ?? [])].sort();
 
@@ -97,25 +100,56 @@ test("remove a topic from a multi-topic note", async ({ page }, testInfo) => {
   expect(sorted(trilium.notes.get("noteMulti").topics)).toEqual(["home", "work"]);
 });
 
-test("removing a note's last topic asks first", async ({ page }, testInfo) => {
+const HINT = "A note needs at least one topic";
+
+async function expectLocked(page, topic) {
+  const row = option(page, topic);
+  await expect(row).toHaveAttribute("aria-disabled", "true");
+  await expect(row).toHaveAttribute("aria-pressed", "true");
+  await expect(row).toContainText(HINT);
+  await expect(row).toBeVisible();
+}
+
+async function expectUnlocked(page, topic) {
+  const row = option(page, topic);
+  await expect(row).not.toHaveAttribute("aria-disabled", "true");
+  await expect(row).not.toContainText(HINT);
+}
+
+test("a note's last topic can't be removed", async ({ page }, testInfo) => {
+  test.setTimeout(60000);
   const trilium = await setupApp(page);
   await openNote(page, testInfo, "work", "Sprint planning");
 
   await press(page.getByRole("button", { name: "Edit topics" }), testInfo);
-  await press(option(page, "work"), testInfo);
-  const warning = page.locator("#noteTopicsPanel [role=alert]");
-  await expect(warning).toContainText("last topic");
-  await page.screenshot({ path: testInfo.outputPath("last-topic-confirm.png") });
-  // nothing changed yet
-  await expect(badges(page)).toHaveText(["work"]);
+  await expectLocked(page, "work");
+  await expectUnlocked(page, "home");
+  // no confirm dialog any more
+  await expect(page.locator("#noteTopicsPanel [role=alert]")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("last-topic-locked.png") });
 
-  await press(page.getByRole("button", { name: "Keep" }), testInfo);
-  await expect(warning).toHaveCount(0);
+  await pressLocked(option(page, "work"), testInfo);
+  await expect(page.locator("#noteTopicsPanel [role=alert]")).toHaveCount(0);
   await expect(badges(page)).toHaveText(["work"]);
+  await expectLocked(page, "work");
 
+  // across a full sync cycle, nothing ever asks Trilium to drop the last topic
+  await page.waitForTimeout(6500);
+  await expect(badges(page)).toHaveText(["work"]);
+  const sent = trilium.requestsTo("set-note").filter((b) => b.noteId === "noteWork1");
+  expect(sent.filter((b) => (b.topics ?? []).length === 0)).toHaveLength(0);
+  expect(trilium.notes.get("noteWork1").topics).toEqual(["work"]);
+
+  // with a second topic, either can go; then the one left is locked
+  await press(option(page, "home"), testInfo);
+  await expect(badges(page)).toHaveText(["work", "home"]);
+  await expectUnlocked(page, "work");
+  await expectUnlocked(page, "home");
   await press(option(page, "work"), testInfo);
-  await press(page.getByRole("button", { name: "Remove" }), testInfo);
-  await expect(badges(page)).toHaveCount(0);
+  await expect(badges(page)).toHaveText(["home"]);
+  await expectLocked(page, "home");
+  await expectUnlocked(page, "work");
+  await page.screenshot({ path: testInfo.outputPath("last-topic-moved.png") });
 
   await expect
     .poll(
@@ -123,6 +157,58 @@ test("removing a note's last topic asks first", async ({ page }, testInfo) => {
         trilium
           .requestsTo("set-note")
           .filter((b) => b.noteId === "noteWork1")
+          .map((b) => sorted(b.topics)),
+      { timeout: 15000 },
+    )
+    .toContainEqual(["home"]);
+  expect(
+    trilium.requestsTo("set-note").filter((b) => b.noteId === "noteWork1" && (b.topics ?? []).length === 0),
+  ).toHaveLength(0);
+});
+
+test("a multi-topic note can drop to one topic, then that one is locked", async ({ page }, testInfo) => {
+  const trilium = await setupApp(page);
+  await openNote(page, testInfo, "reading", "Groceries for the office party");
+
+  await press(page.getByRole("button", { name: "Edit topics" }), testInfo);
+  for (const t of ["work", "home", "reading"]) await expectUnlocked(page, t);
+  await press(option(page, "work"), testInfo);
+  await press(option(page, "reading"), testInfo);
+  await expect(badges(page)).toHaveText(["home"]);
+  await expectLocked(page, "home");
+  await pressLocked(option(page, "home"), testInfo);
+  await expect(badges(page)).toHaveText(["home"]);
+
+  await expect
+    .poll(() => sorted(trilium.notes.get("noteMulti").topics), { timeout: 15000 })
+    .toEqual(["home"]);
+  expect(
+    trilium.requestsTo("set-note").filter((b) => b.noteId === "noteMulti" && (b.topics ?? []).length === 0),
+  ).toHaveLength(0);
+});
+
+test("a quicknote's only topic can still be removed (back to Unsorted)", async ({ page }, testInfo) => {
+  const trilium = await setupApp(page);
+
+  await press(page.getByText("renew passport"), testInfo);
+  const panel = page.locator("#quicknoteEditPanel");
+  await expect(panel).toBeVisible();
+  const home = panel.locator('[data-topic-option="home"]');
+  await expect(home).toHaveAttribute("aria-pressed", "true");
+  await expect(home).not.toHaveAttribute("aria-disabled", "true");
+  await expect(panel).not.toContainText(HINT);
+  await press(home, testInfo);
+  await expect(home).toHaveAttribute("aria-pressed", "false");
+  await page.screenshot({ path: testInfo.outputPath("quicknote-last-topic.png") });
+  await press(panel.getByRole("button", { name: "Done" }), testInfo);
+  await expect(panel).toHaveCount(0);
+
+  await expect
+    .poll(
+      () =>
+        trilium
+          .requestsTo("set-note")
+          .filter((b) => b.noteId === "qnTodo")
           .map((b) => b.topics),
       { timeout: 15000 },
     )

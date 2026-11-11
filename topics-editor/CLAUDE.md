@@ -55,8 +55,8 @@ src/
     QuicknoteCard.svelte    # compact quicknote card (timestamp, full content, todo checkbox, edit)
     QuicknoteInput.svelte   # plain text input for quicknotes; Enter submits and keeps focus (phone keyboard stays up)
     QuicknoteEditPopup.svelte # staged topic/todo editor for selected quicknotes
-    TopicPicker.svelte      # shared tap/click topic list (✓ / – per row); used by create, quicknote popup, note topics popup
-    NoteTopicsPopup.svelte  # note page's topic editor; each tap queues the change (set-note), last-topic removal asks first
+    TopicPicker.svelte      # shared tap/click topic list (✓ / – per row); used by create, quicknote popup, note topics popup. Optional `lockedOf(topic)` → reason string locks a row (aria-disabled, 🔒, reason shown under it)
+    NoteTopicsPopup.svelte  # note page's topic editor; each tap queues the change (set-note). A regular note's last topic is locked ("A note needs at least one topic") because base/topic_collection.js deletes a topic note that loses its last note; quicknotes are exempt (no topic = Unsorted)
     editor.svelte           # CKEditor5 wrapper component
   routes/
     +layout.js              # ssr=false, prerender=true, trailingSlash=always
