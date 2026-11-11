@@ -17,6 +17,8 @@
 
   async function createNote() {
     let tempNoteId = crypto.randomUUID();
+    // createdNotes is null until the idb hydration IIFE resolves
+    if (topicsDbState.createdNotes == null) topicsDbState.createdNotes = {};
     topicsDbState.createdNotes[tempNoteId] = {
       title: title,
       noteId: tempNoteId,

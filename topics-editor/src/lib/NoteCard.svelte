@@ -18,7 +18,8 @@
   <div class="min-h-0 overflow-hidden card-body wrap-break-word">
     <div class="card-title text-xl">{note.title}</div>
     {#if note.topics?.length > 0}
-      <div class="text-sm opacity-60">{note.topics[0]}</div>
+      <!-- every topic, not just the first: on a topic page the first may be a different topic -->
+      <div class="text-sm opacity-60" data-testid="note-topics">{note.topics.join(" · ")}</div>
     {/if}
     <div class="overflow-hidden [&_p]:my-0.5 [&_li]:my-0 prose">
       {@html content}
