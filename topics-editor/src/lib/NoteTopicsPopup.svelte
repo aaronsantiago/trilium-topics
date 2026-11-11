@@ -10,35 +10,29 @@
 
   let { note, onclose } = $props();
 
-  // a topic whose removal would leave the note with none, awaiting confirmation
-  let confirmRemove = $state(null);
-
   let current = $derived(note?.topics ?? []);
+
+  // A regular note always keeps at least one topic: when a topic loses its
+  // last note, base/topic_collection.js deletes that topic note in Trilium,
+  // which can take a note that lives only under it along. Quicknotes are
+  // exempt (no topic = the Unsorted inbox).
+  const LAST_TOPIC_HINT = 'A note needs at least one topic';
+
+  function lockedOf(topic) {
+    if (note?.quicknote) return '';
+    return current.length === 1 && current[0] === topic ? LAST_TOPIC_HINT : '';
+  }
 
   function stateOf(topic) {
     return current.includes(topic) ? 'all' : 'none';
   }
 
-  function setTopics(topics) {
-    queueNoteUpdate(note.noteId, { topics });
-  }
-
   function toggle(topic) {
-    if (current.includes(topic)) {
-      if (current.length === 1) {
-        confirmRemove = topic;
-        return;
-      }
-      setTopics(current.filter((t) => t !== topic));
-    } else {
-      setTopics([...current, topic]);
-    }
-    confirmRemove = null;
-  }
-
-  function removeLast() {
-    setTopics(current.filter((t) => t !== confirmRemove));
-    confirmRemove = null;
+    if (lockedOf(topic)) return;
+    const topics = current.includes(topic)
+      ? current.filter((t) => t !== topic)
+      : [...current, topic];
+    queueNoteUpdate(note.noteId, { topics });
   }
 </script>
 
@@ -62,20 +56,8 @@
 >
   <div class="text-lg font-semibold">Topics</div>
 
-  <TopicPicker {stateOf} ontoggle={toggle} disabled={confirmRemove !== null} />
+  <TopicPicker {stateOf} {lockedOf} ontoggle={toggle} />
 
-  {#if confirmRemove}
-    <div class="alert alert-warning flex flex-col items-stretch gap-2 text-sm" role="alert">
-      <span>
-        Remove <b>{confirmRemove}</b>, the note's last topic? It won't show on any topic page.
-        If this is the last note in “{confirmRemove}”, Trilium deletes that topic.
-      </span>
-      <div class="flex gap-2 justify-end">
-        <button type="button" class="btn btn-sm" onclick={() => (confirmRemove = null)}>Keep</button>
-        <button type="button" class="btn btn-sm btn-error" onclick={removeLast}>Remove</button>
-      </div>
-    </div>
-  {/if}
 
   <button type="button" class="btn btn-primary mt-2" onclick={onclose}>Done</button>
 </div>
