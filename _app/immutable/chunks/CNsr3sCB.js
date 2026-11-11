@@ -1,0 +1,1 @@
+import{L as t,i as S,u as b,M as h,S as k}from"./Bn9CAIxB.js";function u(r,i){return r===i||r?.[k]===i}function T(r={},i,a,L){return t(()=>{var f,s;return S(()=>{f=s,s=[],b(()=>{r!==a(...s)&&(i(r,...s),f&&u(a(...f),r)&&i(null,...f))})}),()=>{h(()=>{s&&u(a(...s),r)&&i(null,...s)})}}),r}export{T as b};
