@@ -172,12 +172,31 @@ function initialize() {
   });
 }
 
+// One checkCreatedNotes run at a time. A run lasts the create-note round trip
+// (slower with every topic: each is a label write on the server) plus a 1.5 s
+// sleep and a refresh, so it can outlive the 5 s interval; a second run would
+// re-POST entries still in the queue and create duplicate notes.
+let checkingCreatedNotes = false;
+
 async function checkCreatedNotes() {
+  if (checkingCreatedNotes) return;
+  checkingCreatedNotes = true;
+  try {
+    await uploadCreatedNotes();
+  } finally {
+    checkingCreatedNotes = false;
+  }
+}
+
+async function uploadCreatedNotes() {
   if (!topicsDbState.triliumUrl || !topicsDbState.triliumSecret) return;
   if (!Object.keys(topicsDbState?.createdNotes || {}).length) return;
 
   let createdNotesToDelete = [];
   let editorNoteId = null;
+  // temp id -> { noteId: real id, sent: what create-note was given }, so edits
+  // made after the upload can be carried over to the real note (see below)
+  let uploaded = {};
   for (let createdNoteId in topicsDbState.createdNotes) {
     let entry = topicsDbState.createdNotes[createdNoteId];
     try {
@@ -201,21 +220,27 @@ async function checkCreatedNotes() {
 
         createdNotesToDelete.push(createdNoteId);
       } else {
+        // what goes up now; the entry keeps taking edits while we wait
+        let sent = $state.snapshot(entry);
         let result = await fetch(topicsDbState.triliumUrl + '/custom/create-note', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            "title": topicsDbState.createdNotes[createdNoteId].title,
+            "title": sent.title,
             "dateCreated": dayjs().format('YYYY-MM-DD HH:mm:ss.SSS').concat(dayjs().format('Z').replace(':', '')),//"2026-02-18 13:27:23.347-0500",
             "secret": topicsDbState.triliumSecret,
-            "content": topicsDbState.createdNotes[createdNoteId].content,
-            "topics": topicsDbState.createdNotes[createdNoteId].topics
+            "content": sent.content,
+            "topics": sent.topics
           })
         });
+        // a 500 body isn't JSON; keep the entry queued and retry next tick
+        if (!result.ok) throw new Error(`create-note failed: HTTP ${result.status}`);
 
         let resultJson = await result.json();
+        if (!resultJson?.noteId) throw new Error("create-note returned no noteId");
+        uploaded[createdNoteId] = { noteId: resultJson.noteId, sent };
 
         console.log("Uploaded created note: ", createdNoteId, resultJson.noteId);
 
@@ -247,6 +272,25 @@ async function checkCreatedNotes() {
             dayjs(topicsDbState.dbNotes[a].dateCreated).valueOf()
           );
           editorNoteId = matches[0];
+        }
+      }
+      let up = uploaded[noteId];
+      if (entry && up) {
+        // Edits typed between the upload and now went into the queued entry,
+        // which is about to go. Hand them to the real note as an update. Also
+        // do it when the refresh didn't bring the real note into dbNotes yet:
+        // otherwise the note page's `note` turns undefined after the id swap
+        // and its editHandler silently drops further typing.
+        let edited = entry.content !== up.sent.content ||
+          JSON.stringify(entry.topics ?? []) !== JSON.stringify(up.sent.topics ?? []);
+        if (edited || !topicsDbState.dbNotes?.[up.noteId]) {
+          queueNoteUpdate(up.noteId, {
+            ...$state.snapshot(entry),
+            ...(topicsDbState.dbNotes?.[up.noteId] || {}),
+            content: entry.content,
+            topics: $state.snapshot(entry.topics),
+            noteId: up.noteId,
+          });
         }
       }
       delete topicsDbState.createdNotes[noteId];
