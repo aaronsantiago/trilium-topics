@@ -46,9 +46,10 @@
      scroll box, so title and text scroll together like a document (the
      toolbar is sticky against it, see editor.svelte).
      An overflow-hidden box here had scroll room a finger couldn't reach but
-     CKEditor's caret-following could, which stranded the title (pb clears
-     the floating button). -->
-<div class="flex flex-col md:flex-row items-stretch md:items-start pb-28">
+     CKEditor's caret-following could, which stranded the title. The room
+     below the text that clears the floating button is padding inside the
+     editable (editor.svelte), so it can be tapped to add lines. -->
+<div class="flex flex-col md:flex-row items-stretch md:items-start">
   <Editor {editHandler} initialData={note?.content} />
   <!-- no w-full: with m-2 it was 100% + 16px wide and panned the page sideways;
        the flex column stretches it to fit instead. md:z-20: sticky makes a

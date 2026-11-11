@@ -172,6 +172,91 @@
     );
   }
 
+  /**
+   * The editable has empty room below the text (padding-bottom, see <style>)
+   * to tap or click into when adding lines at the end. Left alone, a press
+   * there lets the browser / CKEditor pick the nearest spot, which below a
+   * table selects the whole table widget (the next keystroke replaces it).
+   * So catch the press first (capture phase on the editable's parent, before
+   * CKEditor's own listeners on the editable) and put the caret at the end
+   * of the text; if the last block can't hold text (a table), start a new
+   * paragraph after it.
+   * Touch: a tap is handled on touchend (finger didn't move, so it wasn't a
+   * scroll); preventDefault there stops the browser's own tap selection and
+   * the mouse events it would synthesize. Mouse: mousedown.
+   */
+  function tapBelowTextGoesToEnd(editor) {
+    const domRoot = editor.editing.view.getDomRoot();
+    const host = domRoot?.parentElement;
+    if (!host) return;
+    const model = editor.model;
+
+    function lastBlock() {
+      const root = model.document.getRoot();
+      return root.childCount ? root.getChild(root.childCount - 1) : null;
+    }
+    function isBelowText(target, clientY) {
+      if (!domRoot.contains(target)) return false;
+      const block = lastBlock();
+      if (!block) return true;
+      // the last block's own DOM element: CKEditor keeps helper elements
+      // (fake selection container) after it, so not domRoot.lastElementChild
+      const viewEl = editor.editing.mapper.toViewElement(block);
+      const dom = viewEl && editor.editing.view.domConverter.mapViewToDom(viewEl);
+      return !!dom && clientY > dom.getBoundingClientRect().bottom;
+    }
+    function goToEnd() {
+      editor.editing.view.focus();
+      model.change((writer) => {
+        const root = model.document.getRoot();
+        const block = lastBlock();
+        if (!block || !model.schema.checkChild(block, "$text")) {
+          const p = writer.createElement("paragraph");
+          writer.insert(p, root, "end");
+          writer.setSelection(p, "in");
+        } else {
+          writer.setSelection(block, "end");
+        }
+      });
+    }
+
+    host.addEventListener(
+      "mousedown",
+      (e) => {
+        if (e.button !== 0 || !isBelowText(e.target, e.clientY)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        goToEnd();
+      },
+      { capture: true },
+    );
+
+    let touchStart = null;
+    host.addEventListener(
+      "touchstart",
+      (e) => {
+        const t = e.touches.length === 1 ? e.touches[0] : null;
+        touchStart = t && { x: t.clientX, y: t.clientY };
+      },
+      { capture: true, passive: true },
+    );
+    host.addEventListener(
+      "touchend",
+      (e) => {
+        const t = e.changedTouches[0];
+        const start = touchStart;
+        touchStart = null;
+        if (!start || !t || e.touches.length) return;
+        if (Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) return;
+        if (!isBelowText(e.target, t.clientY)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        goToEnd();
+      },
+      { capture: true },
+    );
+  }
+
   onMount(() => {
     let editor;
     let destroyed = false;
@@ -180,6 +265,7 @@
       if (destroyed) return created.destroy();
       editor = created;
       pinToolbar(editor);
+      tapBelowTextGoesToEnd(editor);
       editor.model.document.on("change:data", () => {
         editHandler(editor.getData());
       });
@@ -230,5 +316,13 @@
      (#scrollContainer), so there's no inner scroll box to get stuck in */
   .editor-container :global(.ck.ck-editor__editable) {
     flex: 1;
+  }
+
+  /* room below the text that's still part of the editor, so tapping or
+     clicking there starts typing at the end (tapBelowTextGoesToEnd). It's
+     also what keeps the last line clear of the flower FAB at the end of the
+     scroll (it used to be pb-28 on the note page, outside the editor). */
+  .editor-container :global(.ck.ck-editor__editable.ck-editor__editable_inline) {
+    padding-bottom: 7rem;
   }
 </style>
