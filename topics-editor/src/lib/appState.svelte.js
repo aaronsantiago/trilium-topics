@@ -6,6 +6,12 @@ let appState = $state({
   selectedTopic: '',
   selectedNoteName: '',
   selectedNoteId: '',
+  // one-shot hand-off to /create, set right before navigating there and
+  // cleared by the create page on mount. Deliberately not persisted to idb:
+  // selectedTopic is sticky, so it can't tell "opened from this topic" apart
+  // from "opened from the flower menu after visiting a topic".
+  createSeedTopics: [],
+  createReturnTo: '',
 });
 
 // initialize appState

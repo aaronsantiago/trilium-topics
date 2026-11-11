@@ -61,9 +61,9 @@ src/
     +layout.svelte          # FloatingButton + #scrollContainer, registers the PWA service worker
     +page.svelte            # topic list (home)
     floatingButton.svelte   # tap-to-open flower menu: Home / Create / Settings
-    topic/+page.svelte      # topic view: todos strip (opens first, dones last) + date-ordered timeline w/ inline quicknote scrollers
+    topic/+page.svelte      # topic view: todos strip (opens first, dones last) + date-ordered timeline w/ inline quicknote scrollers; bottom-left "New note" button
     note/+page.svelte       # note editor (CKEditor)
-    create/+page.svelte     # new note form (title input + tap-to-toggle topic picker)
+    create/+page.svelte     # new note form (title input + tap-to-toggle topic picker, Cancel/Create)
     settings/+page.svelte   # Trilium URL + secret config, reset DB
 ```
 
@@ -113,7 +113,7 @@ On home, `focusin`/`pointerdown` inside the quicknotes panel switch on the mobil
 
 Both use the **Svelte 5 runes module pattern**: state is declared with `$state` at module scope, loaded from IndexedDB in a top-level `async` IIFE on import, and persisted back via `$effect`s that must run inside a component lifecycle. Each module exports an `initialize()` function to be called from the appropriate page/layout.
 
-- **`appState`** (`appState.svelte.js`): `{ selectedTopic, selectedNoteName, selectedNoteId }` — persisted to idb-keyval. `initializeAppState()` called from `+layout.svelte`.
+- **`appState`** (`appState.svelte.js`): `{ selectedTopic, selectedNoteName, selectedNoteId }` — persisted to idb-keyval. `initializeAppState()` called from `+layout.svelte`. It also holds two **non-persisted, one-shot** fields, `createSeedTopics` and `createReturnTo`: the topic page's "New note" button sets them before going to `/create`, which reads them once at init (preselected topics; where Cancel/Create return to) and clears them. Don't use `selectedTopic` for this — it's sticky, so `/create` from the flower menu would wrongly inherit the last-visited topic. Without a seed, Cancel goes home and Create opens the new note in `/note`.
 - **`topicsDbState`** (`topicsDb.svelte.js`): `{ triliumUrl, triliumSecret, topicsDb, dbNotes, updatedNotes, createdNotes }` — persisted to idb-keyval. `initialize()` called from `+page.svelte` (home). The `setInterval` sync timers are started in the IIFE on module load (not in `initialize()`).
 
 **Important:** The `$effect`s in `initialize()` also trigger `refreshTopicsDb` when `triliumUrl` or `triliumSecret` change, using `untrack()` to avoid feedback loops.
