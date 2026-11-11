@@ -29,5 +29,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // keeps vite.config.local.js out of tests, useful for setting up local proxies
+    env: { PW_TEST: "1" },
   },
 });

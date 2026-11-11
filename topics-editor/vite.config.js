@@ -1,9 +1,10 @@
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
-import { defineConfig } from "vite";
+import { existsSync } from "node:fs";
+import { defineConfig, mergeConfig } from "vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 
-export default defineConfig({
+const config = defineConfig({
   define: {
     "process.env.NODE_ENV":
       process.env.NODE_ENV === "production" ? '"production"' : '"development"',
@@ -69,4 +70,15 @@ export default defineConfig({
       },
     }),
   ],
+});
+
+// Optional personal dev-server settings (proxy, allowedHosts, ...) live in the
+// gitignored vite.config.local.js; see vite.config.local.example.js. Only used
+// for `vite dev`, never for builds or Playwright runs (which set PW_TEST).
+const localConfig = new URL("./vite.config.local.js", import.meta.url);
+
+export default defineConfig(async ({ command }) => {
+  if (command !== "serve" || process.env.PW_TEST || !existsSync(localConfig)) return config;
+  const { default: local } = await import(localConfig.href);
+  return mergeConfig(config, local);
 });

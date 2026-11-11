@@ -24,6 +24,8 @@ pnpm test:e2e         # Playwright, mobile + desktop projects (see Testing)
 pnpm test:e2e:mobile  # Playwright, phone emulation only
 ```
 
+**Personal dev-server settings** (proxying `/custom` to a Trilium, `host`, `allowedHosts`) go in the gitignored `vite.config.local.js`, copied from `vite.config.local.example.js`. `vite.config.js` merges it in for `vite dev` only. Builds don't use it, and Playwright runs don't either (`PW_TEST=1` in `playwright.config.js`). Don't edit or commit that file, and don't put personal hosts into `vite.config.js`. It may proxy to the user's real Trilium, so never send requests through it.
+
 ## Testing
 
 Playwright (`@playwright/test`, pinned to 1.56.1 to match the Chromium already in `~/.cache/ms-playwright`; if it's missing, `pnpm exec playwright install chromium`). Config: `playwright.config.js`.
