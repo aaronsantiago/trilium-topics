@@ -109,3 +109,17 @@
 	min-width: 0;
 }
 
+
+/*
+	No sideways page pan on phones. The real overflows are fixed where they
+	happen; this is the backstop. clip (not hidden) so html/body don't become
+	scroll containers. Intentional sideways scrollers (home topic strip,
+	quicknote rows, todos strip) are their own overflow-x-auto boxes inside,
+	so they still swipe; don't put touch-action: pan-y up here.
+*/
+html,
+body {
+	overflow-x: clip;
+	overscroll-behavior-x: none;
+}
+

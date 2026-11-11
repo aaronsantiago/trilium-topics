@@ -148,6 +148,30 @@
 
   let editorElement;
 
+  /**
+   * The toolbar is pinned with CSS (position: sticky against #scrollContainer,
+   * see <style>), focused or not. CKEditor's own sticky panel only sticks
+   * while focused and positions itself against the window, which doesn't
+   * scroll here, so switch it off and tell CKEditor's caret-following about
+   * the pinned toolbar instead, so it doesn't scroll the caret under it.
+   */
+  function pinToolbar(editor) {
+    const stickyPanel = editor.ui.view.stickyPanel;
+    if (stickyPanel) {
+      stickyPanel.unbind("isActive");
+      stickyPanel.isActive = false;
+    }
+    const top = editor.ui.view.element?.querySelector(".ck-editor__top");
+    editor.editing.view.on(
+      "scrollToTheSelection",
+      (evt, data) => {
+        const h = top?.offsetHeight ?? 0;
+        data.ancestorOffset = Math.max(data.ancestorOffset ?? 0, h + 12);
+      },
+      { priority: "low" },
+    );
+  }
+
   onMount(() => {
     let editor;
     let destroyed = false;
@@ -155,6 +179,7 @@
       // unmounted before CKEditor finished starting
       if (destroyed) return created.destroy();
       editor = created;
+      pinToolbar(editor);
       editor.model.document.on("change:data", () => {
         editHandler(editor.getData());
       });
@@ -181,6 +206,18 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+  }
+
+  /* pinned toolbar: sticks to the top of #scrollContainer (the only scroll
+     box between it and the viewport, so nothing in between may get an
+     overflow other than visible/clip). Its parent .ck-editor spans the
+     whole note, so it stays pinned to the end. Opaque so text scrolls under
+     it; z-10 keeps it under the topics popup (z-40) and the flower FAB. */
+  .editor-container :global(.ck.ck-editor__top) {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--ck-color-toolbar-background, #ffead2);
   }
 
   .editor-container :global(.ck.ck-editor__main) {
