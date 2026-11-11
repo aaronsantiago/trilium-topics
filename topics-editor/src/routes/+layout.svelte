@@ -38,7 +38,8 @@
  	{@html webManifestLink}
 </svelte:head>
 
-<div class="h-screen">
+<!-- h-dvh: 100vh is taller than the visible area on phones (URL bar) -->
+<div class="h-dvh">
   <FloatingButton />
   <!-- <div class="navbar bg-base-100 shadow-sm">
     <div class="breadcrumbs text-sm">

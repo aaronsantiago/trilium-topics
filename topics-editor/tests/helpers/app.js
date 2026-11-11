@@ -47,24 +47,31 @@ export async function setupApp(page, { fixtures = defaultFixtures(), path = "/" 
 }
 
 /**
- * A real finger-drag scroll (touch gesture) at (x, y), via Chromium's CDP.
- * Positive dy scrolls the content down (finger moves up), like a swipe up.
- * Use this rather than page.mouse.wheel, which doesn't exercise touch
- * scrolling, overscroll or touch-action rules.
+ * A real finger-drag scroll (touch gesture) at (x, y), via Chromium's CDP:
+ * touchStart, a series of touchMoves, touchEnd. Positive dy scrolls the
+ * content down (finger moves up), like a swipe up. Chromium may add a short
+ * fling after the finger lifts, so the distance scrolled is roughly, not
+ * exactly, dy; the helper waits for it to settle.
+ *
+ * (CDP Input.synthesizeScrollGesture with gestureSourceType "touch" does
+ * nothing in this Chromium, so it isn't used.) Use this rather than
+ * page.mouse.wheel, which doesn't exercise touch scrolling, overscroll or
+ * touch-action rules.
  *
  * @param {import('@playwright/test').Page} page
  */
-export async function touchScroll(page, x, y, dy, { speed = 1200 } = {}) {
+export async function touchScroll(page, x, y, dy, { steps = 12, settleMs = 400 } = {}) {
   const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Input.synthesizeScrollGesture", {
-    x,
-    y,
-    yDistance: -dy,
-    speed,
-    gestureSourceType: "touch",
-    repeatCount: 1,
-  });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+  for (let i = 1; i <= steps; i++) {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x, y: y - (dy * i) / steps }],
+    });
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await cdp.detach();
+  await page.waitForTimeout(settleMs);
 }
 
 /** scrollTop of every scrollable ancestor of `selector`, innermost first —

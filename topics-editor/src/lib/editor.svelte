@@ -146,18 +146,25 @@
     },
   };
 
-  onMount(() => {
-    (async () => {
-      let editor = await ClassicEditor.create(
-        document.querySelector("#editor"),
-        editorConfig,
-      );
+  let editorElement;
 
+  onMount(() => {
+    let editor;
+    let destroyed = false;
+    ClassicEditor.create(editorElement, editorConfig).then((created) => {
+      // unmounted before CKEditor finished starting
+      if (destroyed) return created.destroy();
+      editor = created;
       editor.model.document.on("change:data", () => {
-        console.log("change detected");
         editHandler(editor.getData());
       });
-    })();
+    });
+    // destroy on unmount, or every note visit leaks an editor and its
+    // window scroll / visualViewport listeners
+    return () => {
+      destroyed = true;
+      editor?.destroy();
+    };
   });
 </script>
 
@@ -165,7 +172,7 @@
   class="editor-container editor-container_classic-editor prose relative flex flex-col flex-1"
 >
   <div class="editor-container__editor flex flex-col flex-1">
-    <div id="editor"></div>
+    <div id="editor" bind:this={editorElement}></div>
   </div>
 </div>
 
@@ -182,8 +189,9 @@
     flex: 1;
   }
 
+  /* no max-height: the editable grows with its content and the page scrolls
+     (#scrollContainer), so there's no inner scroll box to get stuck in */
   .editor-container :global(.ck.ck-editor__editable) {
     flex: 1;
-    max-height: 90vh;
   }
 </style>
