@@ -50,7 +50,11 @@
       </ul>
     </div>
   </div> -->
-  <div id="scrollContainer" class="overflow-y-auto h-full relative">
+  <!-- overflow-x-hidden: a finger can't pan the page sideways; content that
+       should scroll sideways (topic strip, quicknote rows) has its own
+       overflow-x-auto box. The note page's toolbar is position: sticky
+       against this box (see editor.svelte). -->
+  <div id="scrollContainer" class="overflow-y-auto overflow-x-hidden overscroll-x-none h-full relative">
     {@render children()}
   </div>
 </div>

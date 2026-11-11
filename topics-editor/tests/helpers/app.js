@@ -58,15 +58,18 @@ export async function setupApp(page, { fixtures = defaultFixtures(), path = "/" 
  * page.mouse.wheel, which doesn't exercise touch scrolling, overscroll or
  * touch-action rules.
  *
+ * `dx` adds a sideways component: positive dx scrolls content right (finger
+ * moves left). Pass dy = 0 for a pure sideways swipe.
+ *
  * @param {import('@playwright/test').Page} page
  */
-export async function touchScroll(page, x, y, dy, { steps = 12, settleMs = 400 } = {}) {
+export async function touchScroll(page, x, y, dy, { steps = 12, settleMs = 400, dx = 0 } = {}) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
   for (let i = 1; i <= steps; i++) {
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchMove",
-      touchPoints: [{ x, y: y - (dy * i) / steps }],
+      touchPoints: [{ x: x - (dx * i) / steps, y: y - (dy * i) / steps }],
     });
   }
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });

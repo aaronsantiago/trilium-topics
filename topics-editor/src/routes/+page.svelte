@@ -194,7 +194,7 @@
   {/if}
 
   <div
-    class="order-1 md:order-4 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-none md:overflow-y-hidden md:overflow-x-scroll md:h-full"
+    class="order-1 md:order-4 flex-1 min-h-0 flex flex-col gap-4 bg-base-300 p-4 rounded-lg overflow-y-auto md:flex-auto md:min-w-0 md:overflow-y-hidden md:overflow-x-scroll md:h-full"
     inert={editorOpen}
   >
     <div class="text-xl font-semibold px-2 opacity-60">Recent</div>
