@@ -1,5 +1,6 @@
 <script>
-  import { topicsDbState, queueNoteUpdate } from '$lib/topicsDb.svelte.js';
+  import { queueNoteUpdate } from '$lib/topicsDb.svelte.js';
+  import TopicPicker from '$lib/TopicPicker.svelte';
   import { untrack } from 'svelte';
 
   let { notes, onclose } = $props();
@@ -14,7 +15,6 @@
   // null until the user touches the todo toggle; then the value the panel has set
   let todoIntent = $state(null);
 
-  let topics = $derived.by(() => (topicsDbState.topicsDb?.children || []).map((t) => t.title));
   let selectedIds = $derived(notes.map((n) => n.noteId));
 
   // seed staged entries for newly selected notes (applying the panel's current
@@ -134,19 +134,7 @@
 
   <div class="flex flex-col gap-1">
     <div class="text-sm opacity-60">Topics</div>
-    {#each topics as topic}
-      {@const selection = topicState(topic)}
-      <div
-        class="outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl rounded px-2 py-1 cursor-pointer"
-        tabindex="0"
-        role="button"
-        onclick={() => toggleTopic(topic)}
-      >
-        {topic}
-        {#if selection === 'all'}<span class="badge badge-primary ml-1">✓</span>
-        {:else if selection === 'some'}<span class="badge badge-ghost ml-1">–</span>{/if}
-      </div>
-    {/each}
+    <TopicPicker stateOf={topicState} ontoggle={toggleTopic} />
   </div>
 
   <button

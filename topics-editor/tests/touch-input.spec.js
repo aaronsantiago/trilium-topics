@@ -64,13 +64,13 @@ test("create page: tap topics on and off, then create", async ({ page }, testInf
   const create = page.getByRole("button", { name: "Create", exact: true });
   await expect(create).toBeDisabled();
 
-  await press(page.locator('[data-topic="work"]'), testInfo);
-  await press(page.locator('[data-topic="home"]'), testInfo);
-  await press(page.locator('[data-topic="reading"]'), testInfo);
+  await press(page.locator('[data-topic-option="work"]'), testInfo);
+  await press(page.locator('[data-topic-option="home"]'), testInfo);
+  await press(page.locator('[data-topic-option="reading"]'), testInfo);
   // tapping a selected topic deselects it
-  await press(page.locator('[data-topic="work"]'), testInfo);
-  await expect(page.locator('[data-topic="work"]')).toHaveAttribute("aria-pressed", "false");
-  await expect(page.locator('[data-topic="home"]')).toHaveAttribute("aria-pressed", "true");
+  await press(page.locator('[data-topic-option="work"]'), testInfo);
+  await expect(page.locator('[data-topic-option="work"]')).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator('[data-topic-option="home"]')).toHaveAttribute("aria-pressed", "true");
   await page.screenshot({ path: testInfo.outputPath("create.png") });
 
   await expect(create).toBeEnabled();

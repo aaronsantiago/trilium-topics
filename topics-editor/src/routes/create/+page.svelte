@@ -4,16 +4,11 @@
   import { goto } from "$app/navigation";
   import { base } from "$app/paths";
   import dayjs from "dayjs";
+  import TopicPicker from "$lib/TopicPicker.svelte";
 
   let title = $state("");
   let selectedTopics = $state([]);
 
-  let topics = $derived.by(() => {
-    let topicNotes = topicsDbState.topicsDb?.children || [];
-    return topicNotes.map((topic) => {
-      return topic.title;
-    });
-  });
 
   async function createNote() {
     let tempNoteId = crypto.randomUUID();
@@ -58,25 +53,8 @@
     disabled={title.trim() === "" || selectedTopics.length == 0}
     onclick={createNote}
   >Create</button>
-  {#each topics as topic}
-    <div
-      class="outline-none transition-transform focus-visible:scale-[1.02] focus-visible:shadow-xl rounded px-2 py-1 cursor-pointer"
-      tabindex="0"
-      role="button"
-      aria-pressed={selectedTopics.includes(topic)}
-      data-topic={topic}
-      onclick={() => toggleTopic(topic)}
-      onkeydown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggleTopic(topic);
-        }
-      }}
-    >
-      {topic}
-      {#if selectedTopics.includes(topic)}
-        <span class="badge badge-primary ml-1">✓</span>
-      {/if}
-    </div>
-  {/each}
+  <TopicPicker
+    stateOf={(topic) => (selectedTopics.includes(topic) ? "all" : "none")}
+    ontoggle={toggleTopic}
+  />
 </div>
